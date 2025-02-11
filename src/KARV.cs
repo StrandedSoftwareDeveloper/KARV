@@ -16,6 +16,9 @@ namespace KARV
         Stack<char> keyboardBuffer;
         GameObject uiImageObject;
         bool initialized = false;
+        bool dragging = false;
+        Vector2 dragOffset = Vector3.zero;
+        RectTransform rectTransform;
 
         [DllImport("libkarv")]
         private static extern void setup(ushort width, ushort height);
@@ -46,12 +49,12 @@ namespace KARV
             fbUIRawImage.texture = fbTex;
             fbUIRawImage.enabled = true;
             fbUIRawImage.SetAllDirty();
-            RectTransform transform = uiImageObject.GetComponent<RectTransform>();
-            transform.SetParent(MainCanvasUtil.MainCanvas.transform);
-            transform.localScale *= 4;
-            transform.Rotate(180.0f, 0.0f, 0.0f);
-            transform.Translate(Random.Range(-150.0f, 150.0f), Random.Range(-150.0f, 150.0f), 0.0f);
-            //transform.localScale.y *= -1;
+            rectTransform = uiImageObject.GetComponent<RectTransform>();
+            rectTransform.SetParent(MainCanvasUtil.MainCanvas.transform);
+            rectTransform.localScale *= 4;
+            rectTransform.Rotate(180.0f, 0.0f, 0.0f);
+            rectTransform.Translate(Random.Range(-150.0f, 150.0f), Random.Range(-150.0f, 150.0f), 0.0f);
+            //rectTransform.localScale.y *= -1;
             uiImageObject.SetActive(true);
 
             keyboardBuffer = new Stack<char>();
@@ -64,9 +67,21 @@ namespace KARV
         public void OnGUI() {
             Event ev = Event.current;
             if (ev.isMouse) {
-                if (ev.type == EventType.MouseDrag) {
-                    RectTransform transform = uiImageObject.GetComponent<RectTransform>();
-                    transform.localPosition = ev.mousePosition;
+                if (ev.type == EventType.MouseDown) {
+                    dragging = true;
+                    dragOffset = ev.mousePosition;
+                    dragOffset.x = rectTransform.localPosition.x - dragOffset.x;
+                    dragOffset.y = rectTransform.localPosition.y - (-dragOffset.y);
+                } else if (ev.type == EventType.MouseUp) {
+                    dragging = false;
+                }
+                
+                if (dragging) {
+                    Vector3 newPos = ev.mousePosition;
+                    newPos.y = -newPos.y;
+                    newPos.x += dragOffset.x;
+                    newPos.y += dragOffset.y;
+                    rectTransform.localPosition = newPos;
                 }
             }
             if (ev.isKey && ev.type == EventType.KeyDown) {

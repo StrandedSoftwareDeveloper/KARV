@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--This file is adapted from https://github.com/TeleIO/Telemachus-1/blob/develop/Telemachus/Telemachus.csproj, which is under the MIT license-->
+<!--This file is adapted from https://github.com/TeleIO/Telemachus-1/blob/develop/Telemachus/Telemachus.csproj by TeleIO, which is under the MIT license-->
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
