@@ -5,6 +5,7 @@ Uses CNLohr's wonderful [mini-rv32ima](https://github.com/cnlohr/mini-rv32ima) l
 Currently early in development, missing many features, and rather broken.
 
 All code in this repository is, unless otherwise specified, under the MIT license.
+`default64mbdtc.h` is from [mini-rv32ima](https://github.com/cnlohr/mini-rv32ima/blob/master/mini-rv32ima/default64mbdtc.h) Copyright (c) 2022 CNLohr
 `mini-rv32ima.h` has very minor modifications.
 
 ## Building
