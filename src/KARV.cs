@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace KARV
 {
@@ -53,7 +54,6 @@ namespace KARV
             rectTransform.SetParent(MainCanvasUtil.MainCanvas.transform);
             rectTransform.localScale *= 4;
             rectTransform.Rotate(180.0f, 0.0f, 0.0f);
-            rectTransform.Translate(Random.Range(-150.0f, 150.0f), Random.Range(-150.0f, 150.0f), 0.0f);
             //rectTransform.localScale.y *= -1;
             uiImageObject.SetActive(true);
 
@@ -68,10 +68,17 @@ namespace KARV
             Event ev = Event.current;
             if (ev.isMouse) {
                 if (ev.type == EventType.MouseDown) {
-                    dragging = true;
-                    dragOffset = ev.mousePosition;
-                    dragOffset.x = rectTransform.localPosition.x - dragOffset.x;
-                    dragOffset.y = rectTransform.localPosition.y - (-dragOffset.y);
+                    //Debug.Log("Positions:");
+                    //Debug.Log(rectTransform.localPosition);
+                    //Debug.Log(rectTransform.position);
+                    //Debug.Log(ev.mousePosition);
+                    //if (clickedOnTerminal(ev.mousePosition, rectTransform.position, new Vector2(400.0f, 400.0f))) {
+                    if (true) { //That's broken ^
+                        dragging = true;
+                        dragOffset = ev.mousePosition;
+                        dragOffset.x = rectTransform.localPosition.x - dragOffset.x;
+                        dragOffset.y = rectTransform.localPosition.y - (-dragOffset.y);
+                    }
                 } else if (ev.type == EventType.MouseUp) {
                     dragging = false;
                 }
@@ -167,6 +174,12 @@ namespace KARV
                 cleanup();
                 initialized = false;
             }
+        }
+        
+        bool clickedOnTerminal(Vector2 testPos, Vector3 boxPos, Vector2 boxSize) {
+            Vector2 offset = new Vector2(1600.0f/2.0f + boxSize.x, 900.0f/2.0f);
+            return testPos.x >= boxPos.x && testPos.x + offset.x < boxPos.x + boxSize.x + offset.x &&
+                   testPos.y >= (-boxPos.y) + offset.y && testPos.y < (-boxPos.y) + boxSize.y + offset.y;
         }
     }
 }
