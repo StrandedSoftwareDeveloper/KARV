@@ -1,3 +1,14 @@
+/*----------------------------------------------------------------------------*\
+ | KARV.cs Copyright (c) 2025 StrandedSoftwareDeveloper under the MIT License |
+ | The main file of KARV, responsibilities include:                           |
+ |  -KARVComputer PartModule                                                  |
+ |  -Calling libkarv                                                          |
+ |  -Presentation of the final framebuffer                                    |
+ |  -Passing keyboard inputs to libkarv                                       |
+ |  -All UI tasks                                                             |
+ |  -(Future) Vessel data/control interface                                   |
+\*----------------------------------------------------------------------------*/
+
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using UnityEngine;

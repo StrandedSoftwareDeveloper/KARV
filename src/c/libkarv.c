@@ -1,4 +1,16 @@
-#define KARV_TEST
+/*------------------------------------------------------------------------------*\
+ | libkarv.c Copyright (c) 2025 StrandedSoftwareDeveloper under the MIT License |
+ | The main file of libkarv, responsibilities include:                          |
+ |  -Running the emulator                                                       |
+ |  -Loading and running Linux                                                  |
+ |  -Terminal emulating                                                         |
+ |  -Bitmap font rendering                                                      |
+ |  -Production of the final framebuffer                                        |
+ |                                                                              |
+ | To test: Run `$ tcc -g -lX11 -DKARV_TEST -run path/to/libkarv.c`             |
+ | from a folder with `linux.bin` and `Codepage-437.png`                        |
+\*------------------------------------------------------------------------------*/
+//#define KARV_TEST //Uncomment this line for LSP in the test harness code
 
 #ifdef KARV_TEST
 #define CNFG_IMPLEMENTATION
