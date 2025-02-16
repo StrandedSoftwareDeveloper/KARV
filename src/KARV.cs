@@ -11,11 +11,15 @@ namespace KARV
             public int statusCode;
             public int kbBufferLen;
         };
+        
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Terminal"), UI_Toggle(enabledText = "Hide terminal", disabledText = "Show terminal")]
+        public bool showTerminal = false;
 
         private bool on = true;
         private byte[] vram;
         Stack<char> keyboardBuffer;
         GameObject uiImageObject;
+        UnityEngine.UI.RawImage fbUIRawImage;
         bool initialized = false;
         bool dragging = false;
         Vector2 dragOffset = Vector3.zero;
@@ -46,9 +50,9 @@ namespace KARV
             fbTex.Apply(false, false);
 
             uiImageObject = new GameObject("framebufferUIImageObject");
-            UnityEngine.UI.RawImage fbUIRawImage = uiImageObject.AddComponent<UnityEngine.UI.RawImage>();
+            fbUIRawImage = uiImageObject.AddComponent<UnityEngine.UI.RawImage>();
             fbUIRawImage.texture = fbTex;
-            fbUIRawImage.enabled = true;
+            fbUIRawImage.enabled = showTerminal;
             fbUIRawImage.SetAllDirty();
             rectTransform = uiImageObject.GetComponent<RectTransform>();
             rectTransform.SetParent(MainCanvasUtil.MainCanvas.transform);
@@ -65,7 +69,12 @@ namespace KARV
         }
 
         public void OnGUI() {
+            if (!showTerminal) {
+                return;
+            }
+            
             Event ev = Event.current;
+            
             if (ev.isMouse) {
                 if (ev.type == EventType.MouseDown) {
                     //Debug.Log("Positions:");
@@ -91,6 +100,7 @@ namespace KARV
                     rectTransform.localPosition = newPos;
                 }
             }
+            
             if (ev.isKey && ev.type == EventType.KeyDown) {
                 if (ev.character >= ' ' && ev.character <= '~') {
                     Debug.Log("KARV: OnGUI \'" + ev.character + "\'");
@@ -113,21 +123,25 @@ namespace KARV
         }
 
         public void Update() {
-            UnityEngine.Texture2D fbTex = (Texture2D)GameObject.Find("framebufferUIImageObject").GetComponent<UnityEngine.UI.RawImage>().texture;
-            /*var fbData = fbTex.GetRawTextureData<Color32>();
-            Color32 color = new Color32(0, 0, 0, 255);
-            for (int y=0; y<fbTex.height; y++) {
-                for (int x=0; x<fbTex.width; x++) {
-                    color.r = vram[(y*fbTex.width+x)*4+0];
-                    color.g = vram[(y*fbTex.width+x)*4+1];
-                    color.b = vram[(y*fbTex.width+x)*4+2];
-                    color.a = vram[(y*fbTex.width+x)*4+3];
-                    fbData[(fbTex.height-y)*fbTex.width+x] = color;
-                }
-            }*/
-            //fbTex.SetPixelData<Color32>(fbData, 0);
-            fbTex.SetPixelData(vram, 0, 0);
-            fbTex.Apply(false, false);
+            fbUIRawImage.enabled = showTerminal;
+            if (showTerminal) {
+                UnityEngine.Texture2D fbTex = (Texture2D)GameObject.Find("framebufferUIImageObject").GetComponent<UnityEngine.UI.RawImage>().texture;
+                
+                /*var fbData = fbTex.GetRawTextureData<Color32>();
+                Color32 color = new Color32(0, 0, 0, 255);
+                for (int y=0; y<fbTex.height; y++) {
+                    for (int x=0; x<fbTex.width; x++) {
+                        color.r = vram[(y*fbTex.width+x)*4+0];
+                        color.g = vram[(y*fbTex.width+x)*4+1];
+                        color.b = vram[(y*fbTex.width+x)*4+2];
+                        color.a = vram[(y*fbTex.width+x)*4+3];
+                        fbData[(fbTex.height-y)*fbTex.width+x] = color;
+                    }
+                }*/
+                //fbTex.SetPixelData<Color32>(fbData, 0);
+                fbTex.SetPixelData(vram, 0, 0);
+                fbTex.Apply(false, false);
+            }
         }
 
         public void FixedUpdate() {
