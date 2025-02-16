@@ -62,6 +62,9 @@ static bool first = true;
 
 static uint16_t cursorX = 0;
 static uint16_t cursorY = 0;
+static uint16_t backupCursorX = 0;
+static uint16_t backupCursorY = 0;
+
 
 static void DumpState( struct MiniRV32IMAState * core, uint8_t * ram_image );
 
@@ -338,21 +341,272 @@ void scrollDown(int numLines) {
     //cursorY -= charHeight * numLines;
 }
 
+//TODO: Implement clearFromCursorRight
+void clearFromCursorRight() {
+    
+}
+
+//TODO: Implement clearFromCursorDown
+void clearFromCursorDown() {
+    
+}
+
+typedef enum {
+    NORMAL,
+    ESC,
+    ESC_BRACKET,
+    ESC_OPEN_PAREN,
+    ESC_CLOSE_PAREN,
+    ESC_POUND,
+    ESC_FIVE,
+    ESC_SIX,
+    ESC_BRACKET_TWO,
+    ESC_BRACKET_QUESTION,
+    ESC_BRACKET_ZERO,
+    ESC_BRACKET_ONE,
+    ESC_BRACKET_FOUR,
+    ESC_BRACKET_FIVE,
+    ESC_BRACKET_SEVEN,
+    ESC_BRACKET_EIGHT,
+    ESC_BRACKET_SEMI,
+    ESC_BRACKET_THREE,
+    ESC_BRACKET_NUMA,
+} TerminalState;
+
 void writeChar(char c) {
-    if (c != '\n' && c != '\r') {
-        drawChar(cursorX, cursorY, c);
-    } else {
-        drawChar(cursorX, cursorY, ' ');
-    }
+    static TerminalState state = NORMAL;
+    static int numA = 0;
+    
+    switch (state) {
+        case NORMAL: {
+            if (c == 27) { //Escape code
+                state = ESC;
+                break;
+            }
+            
+            if (c != '\n' && c != '\r') {
+                drawChar(cursorX, cursorY, c);
+            } else {
+                drawChar(cursorX, cursorY, ' ');
+            }
 
-    cursorX += charWidth;
-    if (cursorX >= width - charWidth || c == '\n') {
-        cursorX = 0;
-        cursorY += charHeight;
-    }
+            cursorX += charWidth;
+            if (cursorX >= width - charWidth || c == '\n') {
+                cursorX = 0;
+                cursorY += charHeight;
+            }
 
-    if (cursorY > height - charHeight) {
-        scrollUp(1);
+            if (cursorY > height - charHeight) {
+                scrollUp(1);
+            }
+            break;
+        }
+        case ESC: {
+            switch (c) {
+                case '[': {
+                    state = ESC_BRACKET;
+                    break;
+                }
+                
+                case '=': { //Set alternate keypad mode TODO: Decide what we're gonna do about keypad modes
+                    state = NORMAL;
+                    break;
+                }
+                case '>': { //Set numeric keypad mode TODO: Decide what we're gonna do about keypad modes
+                    state = NORMAL;
+                    break;
+                }
+                
+                case '(': {
+                    state = ESC_OPEN_PAREN;
+                    break;
+                }
+                case ')': {
+                    state = ESC_CLOSE_PAREN;
+                    break;
+                }
+                
+                case 'N': { //Set single shift 2
+                    state = NORMAL;
+                    break;
+                }
+                case 'O': { //Set single shift 3
+                    state = NORMAL;
+                    break;
+                }
+                
+                case 'D': { //Move/scroll window up one line FIXME: I don't think this is quite right...
+                    scrollUp(1);
+                    state = NORMAL;
+                    break;
+                }
+                case 'M': { //Move/scroll window down one line FIXME: I don't think this is quite right...
+                    scrollDown(1);
+                    state = NORMAL;
+                    break;
+                }
+                case 'E': { //Move to next line FIXME: I don't think this is quite right...
+                    scrollUp(1);
+                    state = NORMAL;
+                    break;
+                }
+                case '7': { //Save cursor position and attributes
+                    backupCursorX = cursorX;
+                    backupCursorY = cursorY;
+                    state = NORMAL;
+                    break;
+                }
+                case '8': { //Restore cursor position and attributes
+                    cursorX = backupCursorX;
+                    cursorY = backupCursorY;
+                    state = NORMAL;
+                    break;
+                }
+                
+                case 'H': { //Set a tab at the current column TODO: Figure out what all this tab stuff is supposed to do
+                    state = NORMAL;
+                    break;
+                }
+                
+                case '#': {
+                    state = ESC_POUND;
+                    break;
+                }
+                
+                case '5': {
+                    state = ESC_FIVE;
+                    break;
+                }
+                
+                case '6': {
+                    state = ESC_SIX;
+                    break;
+                }
+                
+                case 'c': { //Reset terminal to initial state
+                    clearScreen();
+                    cursorX = 0;
+                    cursorY = 0;
+                    backupCursorX = 0;
+                    backupCursorY = 0;
+                    state = NORMAL;
+                    break;
+                }
+                
+                case '<': { //Toggle ANSI mode TODO: Implement ANSI mode
+                    state = NORMAL;
+                    break;
+                }
+                
+                default: { //Invalid escape code
+                    state = NORMAL;
+                    break;
+                }
+            }
+            break;
+        }
+        case ESC_BRACKET: {
+            switch (c) {
+                case '2': {
+                    state = ESC_BRACKET_TWO;
+                    break;
+                }
+                case '?': {
+                    state = ESC_BRACKET_QUESTION;
+                    break;
+                }
+                
+                case 'm': { //Turn off character attributes TODO: Implement character attributes
+                    state = NORMAL;
+                    break;
+                }
+                case '0': {
+                    state = ESC_BRACKET_ZERO;
+                    break;
+                }
+                case '1': {
+                    state = ESC_BRACKET_ONE;
+                    break;
+                }
+                case '4': {
+                    state = ESC_BRACKET_FOUR;
+                    break;
+                }
+                case '5': {
+                    state = ESC_BRACKET_FIVE;
+                    break;
+                }
+                case '7': {
+                    state = ESC_BRACKET_SEVEN;
+                    break;
+                }
+                case '8': {
+                    state = ESC_BRACKET_EIGHT;
+                    break;
+                }
+                
+                case 'H': { //Move cursor to upper left corner
+                    cursorX = 0;
+                    cursorY = 0;
+                    state = NORMAL;
+                    break;
+                }
+                case ';': {
+                    state = ESC_BRACKET_SEMI;
+                    break;
+                }
+                case 'f': { //Move cursor to upper left corner
+                    cursorX = 0;
+                    cursorY = 0;
+                    state = NORMAL;
+                    break;
+                }
+                
+                case 'g': { //Clear a tab at the current column TODO: Figure out what all this tab stuff is supposed to do
+                    state = NORMAL;
+                    break;
+                }
+                
+                case 'K': { //Clear line from cursor right
+                    clearFromCursorRight();
+                    state = NORMAL;
+                    break;
+                }
+                
+                case 'J': { //Clear screen from cursor down
+                    clearFromCursorDown();
+                    state = NORMAL;
+                    break;
+                }
+                
+                case 'c': { //Identify what terminal type TODO: Setup keyboard buffer to respond to this
+                    state = NORMAL;
+                    break;
+                }
+                
+                case '3': {
+                    state = ESC_BRACKET_THREE;
+                    break;
+                }
+                
+                default: {
+                    if (c >= '0' && c <= '9') {
+                        numA = c - '0';
+                        state = ESC_BRACKET_NUMA;
+                        break;
+                    } else { //Invalid escape code
+                        state = NORMAL;
+                        break;
+                    }
+                }
+            }
+            break;
+        }
+        default: {
+            printf("TODO: Implement the rest of the escape code stuff\n");
+            state = NORMAL;
+            break;
+        }
     }
 }
 
