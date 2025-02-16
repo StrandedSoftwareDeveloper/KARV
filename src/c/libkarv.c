@@ -326,6 +326,18 @@ void scrollUp(int numLines) {
     cursorY -= charHeight * numLines;
 }
 
+//Not really sure how scrolling down is supposed to work...
+void scrollDown(int numLines) {
+    const int heightLines = height / charHeight;
+    for (int y=heightLines-1; y>=numLines; y--) {
+        memcpy(&localVram[y*width*charHeight*4], &localVram[(y-numLines)*width*charHeight*4], width*charHeight*4);
+    }
+    
+    memset(localVram, 0, numLines*width*charHeight*4);
+    
+    //cursorY -= charHeight * numLines;
+}
+
 void writeChar(char c) {
     if (c != '\n' && c != '\r') {
         drawChar(cursorX, cursorY, c);
