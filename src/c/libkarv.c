@@ -364,6 +364,18 @@ void clearFromCursorDown() {
     memset(&localVram[((cursorY+charHeight)*width*4)], 0, (width*height*4)-((cursorY+charHeight)*width*4));
 }
 
+void clearFromCursorLeft() { //TODO: Implement clearFromCursorLeft()
+    
+}
+
+void clearFromCursorUp() { //TODO: Implement clearFromCursorUp()
+    
+}
+
+void clearLine() { //TODO: Implement clearLine()
+    
+}
+
 typedef enum {
     NORMAL,
     ESC,
@@ -373,17 +385,19 @@ typedef enum {
     ESC_POUND,
     ESC_FIVE,
     ESC_SIX,
-    ESC_BRACKET_TWO,
-    ESC_BRACKET_QUESTION,
     ESC_BRACKET_ZERO,
     ESC_BRACKET_ONE,
+    ESC_BRACKET_TWO,
+    ESC_BRACKET_THREE,
     ESC_BRACKET_FOUR,
     ESC_BRACKET_FIVE,
     ESC_BRACKET_SEVEN,
     ESC_BRACKET_EIGHT,
+    ESC_BRACKET_QUESTION,
     ESC_BRACKET_SEMI,
-    ESC_BRACKET_THREE,
     ESC_BRACKET_NUMA,
+    ESC_BRACKET_TWO_ZERO,
+    ESC_BRACKET_TWO_SEMI,
 } TerminalState;
 
 void writeChar(char c) {
@@ -614,6 +628,175 @@ void writeChar(char c) {
                 }
             }
             break;
+        }
+        case ESC_OPEN_PAREN: {
+            switch (c) {
+                case 'A': { //Set United Kingdom G0 character set TODO: Figure out if we even need these
+                    state = NORMAL;
+                    break;
+                }
+                case 'B': { //Set United States G0 character set TODO: Figure out if we even need these
+                    state = NORMAL;
+                    break;
+                }
+                case '0': { //Set G0 special chars. & line set TODO: Figure out if we even need these
+                    state = NORMAL;
+                    break;
+                }
+                case '1': { //Set G0 alternate character ROM TODO: Figure out if we even need these
+                    state = NORMAL;
+                    break;
+                }
+                case '2': { //Set G0 alt char ROM and spec. graphics TODO: Figure out if we even need these
+                    state = NORMAL;
+                    break;
+                }
+                default: { //Invalid escape code
+                    state = NORMAL;
+                    break;
+                }
+            }
+        }
+        case ESC_CLOSE_PAREN: {
+            switch (c) {
+                case 'A': { //Set United Kingdom G1 character set TODO: Figure out if we even need these
+                    state = NORMAL;
+                    break;
+                }
+                case 'B': { //Set United States G1 character set TODO: Figure out if we even need these
+                    state = NORMAL;
+                    break;
+                }
+                case '0': { //Set G1 special chars. & line set TODO: Figure out if we even need these
+                    state = NORMAL;
+                    break;
+                }
+                case '1': { //Set G1 alternate character ROM TODO: Figure out if we even need these
+                    state = NORMAL;
+                    break;
+                }
+                case '2': { //Set G1 alt char ROM and spec. graphics TODO: Figure out if we even need these
+                    state = NORMAL;
+                    break;
+                }
+                default: { //Invalid escape code
+                    state = NORMAL;
+                    break;
+                }
+            }
+        }
+        case ESC_POUND: {
+            switch (c) {
+                case '3': { //Double-height letters, top half TODO: Implement
+                    state = NORMAL;
+                    break;
+                }
+                case '4': { //Double-height letters, bottom half TODO: Implement
+                    state = NORMAL;
+                    break;
+                }
+                case '5': { //Single width, single height letters TODO: Implement
+                    state = NORMAL;
+                    break;
+                }
+                case '6': { //Double width, single height letters TODO: Implement
+                    state = NORMAL;
+                    break;
+                }
+                
+                case '8': { //Screen alignment display TODO: What is this even supposed to do?
+                    state = NORMAL;
+                    break;
+                }
+            }
+        }
+        case ESC_FIVE: {
+            switch (c) {
+                case 'n': { //Device status report TODO: Setup keyboard buffer to respond to this
+                    state = NORMAL;
+                    break;
+                }
+                default: { //Invalid escape code
+                    state = NORMAL;
+                    break;
+                }
+            }
+        }
+        case ESC_SIX: {
+            switch (c) {
+                case 'n': { //Get cursor position TODO: Setup keyboard buffer to respond to this
+                    state = NORMAL;
+                    break;
+                }
+                default: { //Invalid escape code
+                    state = NORMAL;
+                    break;
+                }
+            }
+        }
+        case ESC_BRACKET_ZERO: {
+            switch (c) {
+                case 'm': { //Turn off character attributes TODO: Implement character attributes
+                    state = NORMAL;
+                    break;
+                }
+                default: { //Invalid escape code
+                    state = NORMAL;
+                    break;
+                }
+            }
+        }
+        case ESC_BRACKET_ONE: {
+            switch (c) {
+                case 'm': { //Turn bold mode on TODO: Implement character attributes
+                    state = NORMAL;
+                    break;
+                }
+                case 'K': { //Clear line from cursor left
+                    clearFromCursorLeft();
+                    state = NORMAL;
+                    break;
+                }
+                case 'J': { //Clear screen from cursor up
+                    clearFromCursorUp();
+                    state = NORMAL;
+                    break;
+                }
+                default: { //Invalid escape code
+                    state = NORMAL;
+                    break;
+                }
+            }
+        }
+        case ESC_BRACKET_TWO: {
+            switch (c) {
+                case '0': {
+                    state = ESC_BRACKET_TWO_ZERO;
+                    break;
+                }
+                case 'm': { //Turn low intensity mode on TODO: Implement character attributes
+                    state = NORMAL;
+                    break;
+                }
+                case 'K': { //Clear entire line
+                    clearLine();
+                    state = NORMAL;
+                    break;
+                }
+                case 'J': { //Clear entire screen
+                    clearScreen();
+                    state = NORMAL;
+                    break;
+                }
+                case ';': {
+                    state = ESC_BRACKET_TWO_SEMI;
+                    break;
+                }
+                default: { //Invalid escape code
+                    state = NORMAL;
+                    break;
+                }
+            }
         }
         default: {
             printf("TODO: Implement the rest of the escape code stuff\n");
