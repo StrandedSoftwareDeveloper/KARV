@@ -1,0 +1,4 @@
+Error: failed to load font
+Error: rom not found
+Checksum: 0x1e
+Finished setup

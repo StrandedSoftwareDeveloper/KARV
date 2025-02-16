@@ -1,9 +1,10 @@
-//#define KARV_TEST
+#define KARV_TEST
 
 #ifdef KARV_TEST
 #define CNFG_IMPLEMENTATION
 #include "rawdraw_sf.h"
 #include "os_generic.h"
+#define STBI_NO_SIMD
 #endif
 
 #include <stdarg.h>
@@ -280,7 +281,7 @@ int main() {
         CNFGSwapBuffers();
         
         double newTime = OGGetAbsoluteTime();
-        printf("%lf\n", newTime-lastTime);
+        //printf("%lf\n", newTime-lastTime);
         if (newTime-lastTime < 0.0166666) {
             OGUSleep((int)((0.0166666-(newTime-lastTime)) * 1000000.0));
         }
@@ -314,6 +315,17 @@ void drawChar(uint16_t x, uint16_t y, uint8_t c) {
     }
 }
 
+void scrollUp(int numLines) {
+    const int heightLines = height / charHeight;
+    for (int y=numLines; y<heightLines; y++) {
+        memcpy(&localVram[(y-numLines)*width*charHeight*4], &localVram[y*width*charHeight*4], width*charHeight*4);
+    }
+    
+    memset(&localVram[(heightLines-numLines)*width*charHeight*4], 0, numLines*width*charHeight*4);
+    
+    cursorY -= charHeight * numLines;
+}
+
 void writeChar(char c) {
     if (c != '\n' && c != '\r') {
         drawChar(cursorX, cursorY, c);
@@ -327,9 +339,8 @@ void writeChar(char c) {
         cursorY += charHeight;
     }
 
-    if (cursorY >= height - charHeight) {
-        clearScreen();
-        cursorY = 0;
+    if (cursorY > height - charHeight) {
+        scrollUp(1);
     }
 }
 
