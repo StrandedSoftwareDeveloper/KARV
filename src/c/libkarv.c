@@ -353,14 +353,15 @@ void scrollDown(int numLines) {
     //cursorY -= charHeight * numLines;
 }
 
-//TODO: Implement clearFromCursorRight
 void clearFromCursorRight() {
-    
+    for (int y=0; y<charHeight; y++) {
+        memset(&localVram[((cursorY+y)*width+cursorX)*4], 0, (width-cursorX)*4);
+    }
 }
 
-//TODO: Implement clearFromCursorDown
 void clearFromCursorDown() {
-    
+    clearFromCursorRight();
+    memset(&localVram[((cursorY+charHeight)*width*4)], 0, (width*height*4)-((cursorY+charHeight)*width*4));
 }
 
 typedef enum {
