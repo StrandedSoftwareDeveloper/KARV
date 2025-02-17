@@ -388,19 +388,11 @@ typedef enum {
     ESC_POUND,
     ESC_FIVE,
     ESC_SIX,
-    ESC_BRACKET_ZERO,
-    ESC_BRACKET_ONE,
-    ESC_BRACKET_TWO,
-    ESC_BRACKET_THREE,
-    ESC_BRACKET_FOUR,
-    ESC_BRACKET_FIVE,
-    ESC_BRACKET_SEVEN,
-    ESC_BRACKET_EIGHT,
+    ESC_BRACKET_NUM,
+    ESC_BRACKET_NUMVALUE,
     ESC_BRACKET_QUESTION,
     ESC_BRACKET_SEMI,
-    ESC_BRACKET_NUMA,
-    ESC_BRACKET_TWO_ZERO,
-    ESC_BRACKET_TWO_SEMI,
+    ESC_BRACKET_NUM_SEMI
 } TerminalState;
 
 void writeChar(char c) {
@@ -537,10 +529,6 @@ void writeChar(char c) {
         }
         case ESC_BRACKET: {
             switch (c) {
-                case '2': {
-                    state = ESC_BRACKET_TWO;
-                    break;
-                }
                 case '?': {
                     state = ESC_BRACKET_QUESTION;
                     break;
@@ -548,30 +536,6 @@ void writeChar(char c) {
                 
                 case 'm': { //Turn off character attributes TODO: Implement character attributes
                     state = NORMAL;
-                    break;
-                }
-                case '0': {
-                    state = ESC_BRACKET_ZERO;
-                    break;
-                }
-                case '1': {
-                    state = ESC_BRACKET_ONE;
-                    break;
-                }
-                case '4': {
-                    state = ESC_BRACKET_FOUR;
-                    break;
-                }
-                case '5': {
-                    state = ESC_BRACKET_FIVE;
-                    break;
-                }
-                case '7': {
-                    state = ESC_BRACKET_SEVEN;
-                    break;
-                }
-                case '8': {
-                    state = ESC_BRACKET_EIGHT;
                     break;
                 }
                 
@@ -614,15 +578,10 @@ void writeChar(char c) {
                     break;
                 }
                 
-                case '3': {
-                    state = ESC_BRACKET_THREE;
-                    break;
-                }
-                
                 default: {
                     if (c >= '0' && c <= '9') {
                         numA = c - '0';
-                        state = ESC_BRACKET_NUMA;
+                        state = ESC_BRACKET_NUM;
                         break;
                     } else { //Invalid escape code
                         state = NORMAL;
@@ -742,67 +701,155 @@ void writeChar(char c) {
             }
             break;
         }
-        case ESC_BRACKET_ZERO: {
+        case ESC_BRACKET_NUM: {
             switch (c) {
-                case 'm': { //Turn off character attributes TODO: Implement character attributes
-                    state = NORMAL;
+                case 'm': {
+                    switch (numA) {
+                        case 0: { //Turn off character attributes TODO: Implement character attributes
+                            state = NORMAL;
+                            break;
+                        }
+                        case 1: { //Turn bold mode on TODO: Implement character attributes
+                            state = NORMAL;
+                            break;
+                        }
+                        case 2: { //Turn low intensity mode on TODO: Implement character attributes
+                            state = NORMAL;
+                            break;
+                        }
+                        case 4: { //Turn underline mode on TODO: Implement character attributes
+                            state = NORMAL;
+                            break;
+                        }
+                        case 5: { //Turn blinking mode on TODO: Implement character attributes
+                            state = NORMAL;
+                            break;
+                        }
+                        case 7: { //Turn reverse video on TODO: Implement character attributes
+                            state = NORMAL;
+                            break;
+                        }
+                        case 8: { //Turn invisible text mode on TODO: Implement character attributes
+                            state = NORMAL;
+                            break;
+                        }
+                        default: { //Invalid escape code
+                            state = NORMAL;
+                            break;
+                        }
+                    }
                     break;
                 }
-                default: { //Invalid escape code
-                    state = NORMAL;
+                case 'g': {
+                    switch (numA) {
+                        case 0: { //Clear a tab at the current column TODO: Figure out what all this tab stuff is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 3: { //Clear all tabs TODO: Figure out what all this tab stuff is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        default: { //Invalid escape code
+                            state = NORMAL;
+                            break;
+                        }
+                    }
                     break;
                 }
-            }
-            break;
-        }
-        case ESC_BRACKET_ONE: {
-            switch (c) {
-                case 'm': { //Turn bold mode on TODO: Implement character attributes
-                    state = NORMAL;
+                case 'K': {
+                    switch (numA) {
+                        case 0: { //Clear line from cursor right
+                            clearFromCursorRight();
+                            state = NORMAL;
+                            break;
+                        }
+                        case 1: { //Clear line from cursor left
+                            clearFromCursorLeft();
+                            state = NORMAL;
+                            break;
+                        }
+                        case 2: { //Clear entire line
+                            clearLine();
+                            state = NORMAL;
+                            break;
+                        }
+                        default: { //Invalid escape code
+                            state = NORMAL;
+                            break;
+                        }
+                    }
                     break;
                 }
-                case 'K': { //Clear line from cursor left
-                    clearFromCursorLeft();
-                    state = NORMAL;
+                case 'J': {
+                    switch (numA) {
+                        case 0: { //Clear screen from cursor down
+                            clearFromCursorDown();
+                            state = NORMAL;
+                            break;
+                        }
+                        case 1: { //Clear screen from cursor up
+                            clearFromCursorUp();
+                            state = NORMAL;
+                            break;
+                        }
+                        case 2: { //Clear entire screen
+                            clearScreen();
+                            state = NORMAL;
+                            break;
+                        }
+                        default: { //Invalid escape code
+                            state = NORMAL;
+                            break;
+                        }
+                    }
                     break;
                 }
-                case 'J': { //Clear screen from cursor up
-                    clearFromCursorUp();
-                    state = NORMAL;
+                case 'c': {
+                    if (numA == 0) { //Identify what terminal type (another) TODO: Setup keyboard buffer to respond to this
+                        state = NORMAL;
+                    } else { //Invalid escape code
+                        state = NORMAL;
+                    }
                     break;
                 }
-                default: { //Invalid escape code
-                    state = NORMAL;
+                //TODO: Maybe implement the terminal self-test stuff?
+                case 'q': {
+                    switch (numA) {
+                        case 0: { //Turn off all four leds TODO: Implement the leds
+                            state = NORMAL;
+                            break;
+                        }
+                        case 1: { //Turn on LED #1 TODO: Implement the leds
+                            state = NORMAL;
+                            break;
+                        }
+                        case 2: { //Turn on LED #2 TODO: Implement the leds
+                            state = NORMAL;
+                            break;
+                        }
+                        case 3: { //Turn on LED #3 TODO: Implement the leds
+                            state = NORMAL;
+                            break;
+                        }
+                        case 4: { //Turn on LED #4 TODO: Implement the leds
+                            state = NORMAL;
+                            break;
+                        }
+                        default: { //Invalid escape code
+                            state = NORMAL;
+                            break;
+                        }
+                    }
                     break;
                 }
-            }
-            break;
-        }
-        case ESC_BRACKET_TWO: {
-            switch (c) {
-                case '0': {
-                    state = ESC_BRACKET_TWO_ZERO;
-                    break;
-                }
-                case 'm': { //Turn low intensity mode on TODO: Implement character attributes
-                    state = NORMAL;
-                    break;
-                }
-                case 'K': { //Clear entire line
-                    clearLine();
-                    state = NORMAL;
-                    break;
-                }
-                case 'J': { //Clear entire screen
-                    clearScreen();
-                    state = NORMAL;
-                    break;
-                }
-                case ';': {
-                    state = ESC_BRACKET_TWO_SEMI;
-                    break;
-                }
-                default: { //Invalid escape code
+                default: {
+                    if (c >= '0' && c <= '9') {
+                        numA *= 10;
+                        numA += c - '0';
+                        printf("Found number: %d\n", numA);
+                        state = ESC_BRACKET_NUMVALUE;
+                    }
                     state = NORMAL;
                     break;
                 }
