@@ -235,7 +235,35 @@ void HandleKey(int keycode, int bDown) {
     if (bDown) {
         char c = keycode;
         
-        if (keycode == CNFG_KEY_SHIFT) {
+        if (keycode == CNFG_KEY_TOP_ARROW) {
+            if (globalKBBufferLen < 1024 - 3) {
+                globalKBBuffer[globalKBBufferLen++] = 27; //ESC
+                globalKBBuffer[globalKBBufferLen++] = 'O';
+                globalKBBuffer[globalKBBufferLen++] = 'A';
+            }
+            return;
+        } else if (keycode == CNFG_KEY_BOTTOM_ARROW) {
+            if (globalKBBufferLen < 1024 - 3) {
+                globalKBBuffer[globalKBBufferLen++] = 27; //ESC
+                globalKBBuffer[globalKBBufferLen++] = 'O';
+                globalKBBuffer[globalKBBufferLen++] = 'B';
+            }
+            return;
+        } else if (keycode == CNFG_KEY_LEFT_ARROW) {
+            if (globalKBBufferLen < 1024 - 3) {
+                globalKBBuffer[globalKBBufferLen++] = 27; //ESC
+                globalKBBuffer[globalKBBufferLen++] = 'O';
+                globalKBBuffer[globalKBBufferLen++] = 'D';
+            }
+            return;
+        } else if (keycode == CNFG_KEY_RIGHT_ARROW) {
+            if (globalKBBufferLen < 1024 - 3) {
+                globalKBBuffer[globalKBBufferLen++] = 27; //ESC
+                globalKBBuffer[globalKBBufferLen++] = 'O';
+                globalKBBuffer[globalKBBufferLen++] = 'C';
+            }
+            return;
+        } else if (keycode == CNFG_KEY_SHIFT) {
             leftShift = true;
             return;
         } else if (keycode == CNFG_KEY_SHIFT+1) {
@@ -408,7 +436,7 @@ void writeChar(char c) {
                 break;
             }
             
-            if (c != '\n' && c != '\r' && c != 8 /*Backspace*/) {
+            if (c != '\n' && c != '\r' && c != 8 /*Backspace*/ && c != 7 /*Bell*/) {
                 drawChar(cursorX, cursorY, c);
             } else {
                 drawChar(cursorX, cursorY, ' ');
@@ -416,6 +444,8 @@ void writeChar(char c) {
             
             if (c == 8 /*Backspace*/) {
                 cursorX -= charWidth;
+                break;
+            } else if (c == 7 /*Bell*/) { //TODO: C'mon, we gotta do *something* with the bell
                 break;
             }
 
