@@ -364,16 +364,19 @@ void clearFromCursorDown() {
     memset(&localVram[((cursorY+charHeight)*width*4)], 0, (width*height*4)-((cursorY+charHeight)*width*4));
 }
 
-void clearFromCursorLeft() { //TODO: Implement clearFromCursorLeft()
-    
+void clearFromCursorLeft() {
+    for (int y=0; y<charHeight; y++) {
+        memset(&localVram[(cursorY+y)*width*4], 0, cursorX*4);
+    }
 }
 
-void clearFromCursorUp() { //TODO: Implement clearFromCursorUp()
-    
+void clearFromCursorUp() {
+    clearFromCursorLeft();
+    memset(localVram, 0, cursorY*width*4);
 }
 
-void clearLine() { //TODO: Implement clearLine()
-    
+void clearLine() {
+    memset(&localVram[cursorY*width*4], 0, width*charHeight*4);
 }
 
 typedef enum {
@@ -656,6 +659,7 @@ void writeChar(char c) {
                     break;
                 }
             }
+            break;
         }
         case ESC_CLOSE_PAREN: {
             switch (c) {
@@ -684,6 +688,7 @@ void writeChar(char c) {
                     break;
                 }
             }
+            break;
         }
         case ESC_POUND: {
             switch (c) {
@@ -709,6 +714,7 @@ void writeChar(char c) {
                     break;
                 }
             }
+            break;
         }
         case ESC_FIVE: {
             switch (c) {
@@ -721,6 +727,7 @@ void writeChar(char c) {
                     break;
                 }
             }
+            break;
         }
         case ESC_SIX: {
             switch (c) {
@@ -733,6 +740,7 @@ void writeChar(char c) {
                     break;
                 }
             }
+            break;
         }
         case ESC_BRACKET_ZERO: {
             switch (c) {
@@ -745,6 +753,7 @@ void writeChar(char c) {
                     break;
                 }
             }
+            break;
         }
         case ESC_BRACKET_ONE: {
             switch (c) {
@@ -767,6 +776,7 @@ void writeChar(char c) {
                     break;
                 }
             }
+            break;
         }
         case ESC_BRACKET_TWO: {
             switch (c) {
@@ -797,6 +807,7 @@ void writeChar(char c) {
                     break;
                 }
             }
+            break;
         }
         default: {
             printf("TODO: Implement the rest of the escape code stuff\n");
