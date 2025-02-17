@@ -10,7 +10,7 @@
  | To test: Run `$ tcc -g -lX11 -DKARV_TEST -run path/to/libkarv.c`             |
  | from a folder with `linux.bin` and `Codepage-437.png`                        |
 \*------------------------------------------------------------------------------*/
-//#define KARV_TEST //Uncomment this line for LSP in the test harness code
+#define KARV_TEST //Uncomment this line for LSP in the test harness code
 
 #ifdef KARV_TEST
 #define CNFG_IMPLEMENTATION
@@ -237,8 +237,10 @@ void HandleKey(int keycode, int bDown) {
         
         if (keycode == CNFG_KEY_SHIFT) {
             leftShift = true;
+            return;
         } else if (keycode == CNFG_KEY_SHIFT+1) {
             rightShift = true;
+            return;
         } else if (leftShift || rightShift) {
             if (keycode >= '\'' && keycode <= '`') {
                 c = shiftRemap[keycode-'\''];
@@ -406,10 +408,15 @@ void writeChar(char c) {
                 break;
             }
             
-            if (c != '\n' && c != '\r') {
+            if (c != '\n' && c != '\r' && c != 8 /*Backspace*/) {
                 drawChar(cursorX, cursorY, c);
             } else {
                 drawChar(cursorX, cursorY, ' ');
+            }
+            
+            if (c == 8 /*Backspace*/) {
+                cursorX -= charWidth;
+                break;
             }
 
             cursorX += charWidth;
