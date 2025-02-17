@@ -10,7 +10,7 @@
  | To test: Run `$ tcc -g -lX11 -DKARV_TEST -run path/to/libkarv.c`             |
  | from a folder with `linux.bin` and `Codepage-437.png`                        |
 \*------------------------------------------------------------------------------*/
-#define KARV_TEST //Uncomment this line for LSP in the test harness code
+//#define KARV_TEST //Uncomment this line for LSP in the test harness code
 
 #ifdef KARV_TEST
 #define CNFG_IMPLEMENTATION
@@ -907,8 +907,12 @@ static int ReadKBByte()
     if (kbBufferLen < 1) {
         return -1;
     }
+    char c = keyboardBuffer[0];
+    for (int i=0; i<kbBufferLen-1; i++) {
+        keyboardBuffer[i] = keyboardBuffer[i+1];
+    }
     kbBufferLen -= 1;
-    return keyboardBuffer[kbBufferLen];
+    return c;
 }
 
 static int IsKBHit()
