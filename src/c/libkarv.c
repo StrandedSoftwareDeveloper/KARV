@@ -422,7 +422,7 @@ typedef enum {
     ESC_BRACKET_NUMVALUE,
     ESC_BRACKET_QUESTION,
     ESC_BRACKET_SEMI,
-    ESC_BRACKET_NUM_SEMI
+    ESC_BRACKET_NUMVALUE_SEMI,
 } TerminalState;
 
 void writeChar(char c) {
@@ -886,6 +886,67 @@ void writeChar(char c) {
                         numA += c - '0';
                         printf("Found number: %d\n", numA);
                         state = ESC_BRACKET_NUMVALUE;
+                        return; //Return to skip the fallthrough to the next case
+                    }
+                    state = NORMAL;
+                    break;
+                }
+            }
+            //NOTE: The fallthrough is intentional here! At this point we aren't sure if the number we see is a value or not
+            //break;
+        }
+        case ESC_BRACKET_NUMVALUE: {
+            printf("Value check\n");
+            switch (c) {
+                case 'h': {
+                    if (numA == 20) { //Set new line mode TODO: Figure out what this is supposed to do
+                        state = NORMAL;
+                        break;
+                    } else { //Invalid escape code
+                        state = NORMAL;
+                        break;
+                    }
+                }
+                case 'l': {
+                    if (numA == 20) { //Set line feed mode TODO: Figure out what this is supposed to do
+                        state = NORMAL;
+                        break;
+                    } else { //Invalid escape code
+                        state = NORMAL;
+                        break;
+                    }
+                }
+                case ';': {
+                    state = ESC_BRACKET_NUMVALUE_SEMI;
+                    break;
+                }
+                case 'A': { //Move cursor up numA lines
+                    cursorY -= charHeight * numA;
+                    state = NORMAL;
+                    break;
+                }
+                case 'B': { //Move cursor down numA lines
+                    cursorY += charHeight * numA;
+                    state = NORMAL;
+                    break;
+                }
+                case 'C': { //Move cursor right numA lines
+                    cursorX += charWidth * numA;
+                    state = NORMAL;
+                    break;
+                }
+                case 'D': { //Move cursor left numA lines
+                    cursorX -= charWidth * numA;
+                    state = NORMAL;
+                    break;
+                }
+                default: {
+                    if (c >= '0' && c <= '9') {
+                        numA *= 10;
+                        numA += c - '0';
+                        printf(" Found number: %d\n", numA);
+                        state = ESC_BRACKET_NUMVALUE;
+                        break;
                     }
                     state = NORMAL;
                     break;
