@@ -422,6 +422,7 @@ typedef enum {
     ESC_BRACKET_NUM_SEMI,
     ESC_BRACKET_NUM_SEMI_NUM,
     ESC_BRACKET_QUESTION,
+    ESC_BRACKET_QUESTION_NUM,
     ESC_BRACKET_SEMI,
 } TerminalState;
 
@@ -997,6 +998,131 @@ void writeChar(char c) {
                         break;
                     }
                     state = NORMAL; //Invalid escape code
+                    break;
+                }
+            }
+            break;
+        }
+        case ESC_BRACKET_QUESTION: {
+            if (c >= '1' && c <= '9') {
+                numA = c - '0';
+                state = ESC_BRACKET_QUESTION_NUM;
+                break;
+            }
+            state = NORMAL; //Invalid escape code
+            break;
+        }
+        case ESC_BRACKET_QUESTION_NUM: {
+            switch (c) {
+                case 'h': {
+                    switch (numA) {
+                        case 1: { //Set cursor key to application TODO: Figure out what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 3: { //Set number of columns to 132 TODO: Figure out what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 4: { //Set smooth scrolling TODO: Implement smooth scrolling
+                            state = NORMAL;
+                            break;
+                        }
+                        case 5: { //Set reverse video on screen TODO: Implement reverse video
+                            state = NORMAL;
+                            break;
+                        }
+                        case 6: { //Set origin to relative TODO: Figure out what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 7: { //Set auto-wrap mode TODO: Figure out what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 8: { //Set auto-repeat mode TODO: Figure out what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 9: { //Set interlacing mode NOTE: This probably will never do anything
+                            state = NORMAL;
+                            break;
+                        }
+                        default: { //Invalid escape code
+                            state = NORMAL;
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case 'l': {
+                    switch (numA) {
+                        case 1: { //Set cursor key to cursor TODO: Figure out what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 2: { //Set VT52 (versus ANSI) TODO: Figure out if we want this
+                            state = NORMAL;
+                            break;
+                        }
+                        case 3: { //Set number of columns to 80 TODO: Figure out exactly what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 4: { //Set jump scrolling TODO: Implement smooth scrolling
+                            state = NORMAL;
+                            break;
+                        }
+                        case 5: { //Set normal video on screen TODO: Implement reverse video
+                            state = NORMAL;
+                            break;
+                        }
+                        case 6: { //Set origin to absolute TODO: Figure out what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 7: { //Reset auto-wrap mode TODO: Figure out what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 8: { //Reset auto-repeat mode TODO: Figure out what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 9: { //Reset interlacing mode NOTE: This probably will never do anything
+                            state = NORMAL;
+                            break;
+                        }
+                        default: { //Invalid escape code
+                            state = NORMAL;
+                            break;
+                        }
+                    }
+                    break;
+                }
+                default: { //Invalid escape code
+                    state = NORMAL;
+                    break;
+                }
+            }
+            break;
+        }
+        case ESC_BRACKET_SEMI: {
+            switch (c) {
+                case 'H': { //Move cursor to upper left corner
+                    cursorX = 0;
+                    cursorY = 0;
+                    state = NORMAL;
+                    break;
+                }
+                case 'f': { //Move cursor to upper left corner
+                    cursorX = 0;
+                    cursorY = 0;
+                    state = NORMAL;
+                    break;
+                }
+                default: { //Invalid escape code
+                    state = NORMAL;
                     break;
                 }
             }
