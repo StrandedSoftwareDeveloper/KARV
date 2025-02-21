@@ -419,15 +419,15 @@ typedef enum {
     ESC_FIVE,
     ESC_SIX,
     ESC_BRACKET_NUM,
-    ESC_BRACKET_NUMVALUE,
+    ESC_BRACKET_NUM_SEMI,
     ESC_BRACKET_QUESTION,
     ESC_BRACKET_SEMI,
-    ESC_BRACKET_NUMVALUE_SEMI,
 } TerminalState;
 
 void writeChar(char c) {
     static TerminalState state = NORMAL;
     static int numA = 0;
+    static int numB = 0;
     
     switch (state) {
         case NORMAL: {
@@ -740,6 +740,24 @@ void writeChar(char c) {
         }
         case ESC_BRACKET_NUM: {
             switch (c) {
+                case 'h': {
+                    if (numA == 20) { //Set new line mode TODO: Figure out what this is supposed to do
+                        state = NORMAL;
+                        break;
+                    } else { //Invalid escape code
+                        state = NORMAL;
+                        break;
+                    }
+                }
+                case 'l': {
+                    if (numA == 20) { //Set line feed mode TODO: Figure out what this is supposed to do
+                        state = NORMAL;
+                        break;
+                    } else { //Invalid escape code
+                        state = NORMAL;
+                        break;
+                    }
+                }
                 case 'm': {
                     switch (numA) {
                         case 0: { //Turn off character attributes TODO: Implement character attributes
@@ -777,6 +795,32 @@ void writeChar(char c) {
                     }
                     break;
                 }
+                case ';': {
+                    state = ESC_BRACKET_NUM_SEMI;
+                    break;
+                }
+                
+                case 'A': { //Move cursor up numA lines
+                    cursorY -= charHeight * numA;
+                    state = NORMAL;
+                    break;
+                }
+                case 'B': { //Move cursor down numA lines
+                    cursorY += charHeight * numA;
+                    state = NORMAL;
+                    break;
+                }
+                case 'C': { //Move cursor right numA lines
+                    cursorX += charWidth * numA;
+                    state = NORMAL;
+                    break;
+                }
+                case 'D': { //Move cursor left numA lines
+                    cursorX -= charWidth * numA;
+                    state = NORMAL;
+                    break;
+                }
+                
                 case 'g': {
                     switch (numA) {
                         case 0: { //Clear a tab at the current column TODO: Figure out what all this tab stuff is supposed to do
@@ -884,74 +928,19 @@ void writeChar(char c) {
                     if (c >= '0' && c <= '9') {
                         numA *= 10;
                         numA += c - '0';
-                        printf("Found number: %d\n", numA);
-                        state = ESC_BRACKET_NUMVALUE;
-                        return; //Return to skip the fallthrough to the next case
+                        break;
                     }
                     state = NORMAL;
                     break;
                 }
             }
-            //NOTE: The fallthrough is intentional here! At this point we aren't sure if the number we see is a value or not
-            //break;
+            break;
         }
-        case ESC_BRACKET_NUMVALUE: {
-            printf("Value check\n");
-            switch (c) {
-                case 'h': {
-                    if (numA == 20) { //Set new line mode TODO: Figure out what this is supposed to do
-                        state = NORMAL;
-                        break;
-                    } else { //Invalid escape code
-                        state = NORMAL;
-                        break;
-                    }
-                }
-                case 'l': {
-                    if (numA == 20) { //Set line feed mode TODO: Figure out what this is supposed to do
-                        state = NORMAL;
-                        break;
-                    } else { //Invalid escape code
-                        state = NORMAL;
-                        break;
-                    }
-                }
-                case ';': {
-                    state = ESC_BRACKET_NUMVALUE_SEMI;
-                    break;
-                }
-                case 'A': { //Move cursor up numA lines
-                    cursorY -= charHeight * numA;
-                    state = NORMAL;
-                    break;
-                }
-                case 'B': { //Move cursor down numA lines
-                    cursorY += charHeight * numA;
-                    state = NORMAL;
-                    break;
-                }
-                case 'C': { //Move cursor right numA lines
-                    cursorX += charWidth * numA;
-                    state = NORMAL;
-                    break;
-                }
-                case 'D': { //Move cursor left numA lines
-                    cursorX -= charWidth * numA;
-                    state = NORMAL;
-                    break;
-                }
-                default: {
-                    if (c >= '0' && c <= '9') {
-                        numA *= 10;
-                        numA += c - '0';
-                        printf(" Found number: %d\n", numA);
-                        state = ESC_BRACKET_NUMVALUE;
-                        break;
-                    }
-                    state = NORMAL;
-                    break;
-                }
-            }
+        case ESC_BRACKET_NUM_SEMI: {
+            /*if (c >= '0' && c <= '9') {
+                numB = c - '0';
+            }*/
+            state = NORMAL;
             break;
         }
         default: {
