@@ -420,6 +420,7 @@ typedef enum {
     ESC_SIX,
     ESC_BRACKET_NUM,
     ESC_BRACKET_NUM_SEMI,
+    ESC_BRACKET_NUM_SEMI_NUM,
     ESC_BRACKET_QUESTION,
     ESC_BRACKET_SEMI,
 } TerminalState;
@@ -930,17 +931,75 @@ void writeChar(char c) {
                         numA += c - '0';
                         break;
                     }
-                    state = NORMAL;
+                    state = NORMAL; //Invalid escape code
                     break;
                 }
             }
             break;
         }
         case ESC_BRACKET_NUM_SEMI: {
-            /*if (c >= '0' && c <= '9') {
+            if (c >= '0' && c <= '9') {
                 numB = c - '0';
-            }*/
-            state = NORMAL;
+                state = ESC_BRACKET_NUM_SEMI_NUM;
+                break;
+            }
+            state = NORMAL; //Invalid escape code
+            break;
+        }
+        case ESC_BRACKET_NUM_SEMI_NUM: {
+            switch (c) {
+                case 'r': { //Set top and bottom line's of a window TODO: Figure out what this is supposed to do
+                    state = NORMAL;
+                    break;
+                }
+                case 'H': { //Move cursor to screen location numA, numB
+                    cursorX = numA * charWidth;
+                    cursorY = numB * charHeight;
+                    state = NORMAL;
+                    break;
+                }
+                case 'f': { //Move cursor to screen location numA, numB
+                    cursorX = numA * charWidth;
+                    cursorY = numB * charHeight;
+                    state = NORMAL;
+                    break;
+                }
+                case 'y': { //Terminal self tests
+                    if (numA != 2) { //Invalid escape code
+                        state = NORMAL;
+                        break;
+                    }
+                    
+                    switch (numB) {
+                        case 1: { //Confidence power up test TODO: Figure out what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 2: { //Confidence loopback test TODO: Figure out what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 9: { //Repeat power up test TODO: Figure out what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                        case 10: { //Repeat loopback test TODO: Figure out what this is supposed to do
+                            state = NORMAL;
+                            break;
+                        }
+                    }
+                    break;
+                }
+                default: {
+                    if (c >= '0' && c <= '9') {
+                        numB *= 10;
+                        numB += c - '0';
+                        break;
+                    }
+                    state = NORMAL; //Invalid escape code
+                    break;
+                }
+            }
             break;
         }
         default: {
