@@ -1036,17 +1036,17 @@ void writeChar(char c) {
                     state = NORMAL;
                     break;
                 }
-                case 'H': { //Move cursor to screen location numA, numB
-                    printf("Move cursor to screen location numA, numB\n");
-                    cursorX = numA * charWidth;
-                    cursorY = numB * charHeight;
+                case 'H': { //Move cursor to screen location numB, numA NOTE: Coordinates come in y, x format, (1, 1) is the top left corner
+                    printf("Move cursor to screen location numB, numA\n");
+                    cursorX = (numB - 1) * charWidth;
+                    cursorY = (numA - 1) * charHeight;
                     state = NORMAL;
                     break;
                 }
-                case 'f': { //Move cursor to screen location numA, numB
-                    printf("Move cursor to screen location numA, numB\n");
-                    cursorX = numA * charWidth;
-                    cursorY = numB * charHeight;
+                case 'f': { //Move cursor to screen location numB, numA NOTE: Coordinates come in y, x format, (1, 1) is the top left corner
+                    printf("Move cursor to screen location numB, numA\n");
+                    cursorX = (numB - 1) * charWidth;
+                    cursorY = (numA - 1) * charHeight;
                     state = NORMAL;
                     break;
                 }
