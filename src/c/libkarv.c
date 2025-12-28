@@ -101,7 +101,7 @@ void setup(uint16_t screenWidth, uint16_t screenHeight) {
     ram_image = malloc(MINI_RV32_RAM_SIZE);
     memset(ram_image, 0, MINI_RV32_RAM_SIZE);
 
-    FILE *rom = fopen("linux.bin", "r");
+    FILE *rom = fopen("linux.bin", "rb");
     if (rom == NULL) {
         fprintf(logFile, "Error: rom not found\n");
     } else {
@@ -233,6 +233,7 @@ char shiftRemap[] = {
 
 void HandleKey(int keycode, int bDown) {
     if (bDown) {
+        keycode = tolower(keycode); //Apparently keycodes come in as upper case on Windows
         char c = keycode;
         
         if (keycode == CNFG_KEY_TOP_ARROW) {
@@ -266,7 +267,7 @@ void HandleKey(int keycode, int bDown) {
         } else if (keycode == CNFG_KEY_SHIFT) {
             leftShift = true;
             return;
-        } else if (keycode == CNFG_KEY_SHIFT+1) {
+        } else if (keycode == CNFG_KEY_SHIFT+1) { //FIXME: This doesn't seem to work on Windows
             rightShift = true;
             return;
         } else if (leftShift || rightShift) {
