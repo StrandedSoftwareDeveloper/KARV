@@ -109,13 +109,13 @@ void setup(uint16_t screenWidth, uint16_t screenHeight) {
         size_t len = ftell(rom);
         printf("len:%lu\n", len);
         fseek(rom, 0, SEEK_SET);
-
+        
         if (len <= MINI_RV32_RAM_SIZE) {
             fread(ram_image, sizeof(uint8_t), len, rom);
         } else {
             fprintf(logFile, "Error: rom too big\n");
         }
-
+        
         fclose(rom);
     }
 
@@ -300,10 +300,10 @@ void HandleMotion(int x, int y, int mask) {
 void HandleDestroy() {}
 
 int main() {
-    setup(400, 400);
-    CNFGSetup("KARV external test program", 400, 400);
+    setup(600, 600);
+    CNFGSetup("KARV external test program", 600, 600);
     printf("start\n");
-    uint32_t vram[400*400];
+    uint32_t vram[600*600];
     
     int running = 1;
     for (int i=0; CNFGHandleInput() != 0 && running; i++) {
@@ -323,7 +323,7 @@ int main() {
 		}
 		
 		CNFGClearFrame();
-		CNFGBlitImage(vram, 0, 0, 400, 400);
+		CNFGBlitImage(vram, 0, 0, 600, 600);
         CNFGSwapBuffers();
         
         double newTime = OGGetAbsoluteTime();
@@ -1319,17 +1319,50 @@ static uint32_t HandleControlStore( uint32_t addy, uint32_t val )
         writeChar(val);
 		//printf("%c", val);
         //fflush(stdout);
-	}
+	} else if (addy == 0x11000000) { //Graphics width
+        fprintf(stderr, "Guest tried to set width to %u, but guest-set sizes are not supported yet\n", val);
+    } else if (addy == 0x11000004) { //Graphics height
+        fprintf(stderr, "Guest tried to set height to %u, but guest-set sizes are not supported yet\n", val);
+    } else if (addy >= 0x1100000C && addy < width*height*4+0x1100000C) { //Graphics frame buffer
+        uint32_t index = addy-0x1100000C;
+        uint8_t r = (val >>  0) & 0xFF;
+        uint8_t g = (val >>  8) & 0xFF;
+        uint8_t b = (val >> 16) & 0xFF;
+        uint8_t a = (val >> 24) & 0xFF;
+        
+        localVram[index+0] = r;
+        localVram[index+1] = g;
+        localVram[index+2] = b;
+        localVram[index+3] = a;
+    }
 	return 0;
 }
 
 static uint32_t HandleControlLoad( uint32_t addy )
 {
 	// Emulating a 8250 / 16550 UART
-	if( addy == 0x10000005 )
+	if( addy == 0x10000005 ) {
 		return 0x60 | IsKBHit();
-	else if( addy == 0x10000000 && IsKBHit() )
+    } else if( addy == 0x10000000 && IsKBHit() ) {
 		return ReadKBByte();
+    } else if (addy == 0x11000000) { //Graphics width
+        return width;
+    } else if (addy == 0x11000004) { //Graphics height
+        return height;
+    } else if (addy == 0x11000008) { //Reserved for other graphics data
+        return 0;
+    } else if (addy >= 0x1100000C && addy < width*height*4+0x1100000C) { //Graphics frame buffer
+        uint32_t index = addy-0x1100000C;
+        uint32_t r = localVram[index];
+        uint32_t g = localVram[index+1];
+        uint32_t b = localVram[index+2];
+        uint32_t a = localVram[index+3];
+        uint32_t result = r | g << 8 | b << 16 | a << 24;
+        //uint32_t altResult = ((uint32_t*)localVram)[index/4];
+        //fprintf(stderr, "result: %x, altResult: %x\n", result, altResult);
+        return result;
+    }
+    
 	return 0;
 }
 
