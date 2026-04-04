@@ -1,0 +1,69 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!--<ItemGroup>
+    <PackageReference Include="StarMap.API" Version="0.3.1" />
+  </ItemGroup>-->
+
+  <ItemGroup>
+    <Reference Include="Harmony">
+      <HintPath>references\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="KSA">
+      <HintPath>$(KSA_DEV_FOLDER)\KSA.dll</HintPath>
+    </Reference>
+    <Reference Include="Brutal.Glfw">
+      <HintPath>$(KSA_DEV_FOLDER)\Brutal.Glfw.dll</HintPath>
+    </Reference>
+    <Reference Include="Planet.Render.Core">
+      <HintPath>$(KSA_DEV_FOLDER)\Planet.Render.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Brutal.Vulkan">
+      <HintPath>$(KSA_DEV_FOLDER)\Brutal.Vulkan.dll</HintPath>
+    </Reference>
+    <Reference Include="Brutal.Vulkan.Abstractions">
+      <HintPath>$(KSA_DEV_FOLDER)\Brutal.Vulkan.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Brutal.ImGui">
+      <HintPath>$(KSA_DEV_FOLDER)\Brutal.ImGui.dll</HintPath>
+    </Reference>
+    <Reference Include="Brutal.ImGui.Abstractions">
+      <HintPath>$(KSA_DEV_FOLDER)\Brutal.ImGui.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Brutal.ImGui.Extensions">
+      <HintPath>$(KSA_DEV_FOLDER)\Brutal.ImGui.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Brutal.Core.Common">
+      <HintPath>$(KSA_DEV_FOLDER)\Brutal.Core.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Brutal.Core.Maths">
+      <HintPath>$(KSA_DEV_FOLDER)\Brutal.Core.Maths.dll</HintPath>
+    </Reference>
+    <Reference Include="Brutal.Core.Numerics">
+      <HintPath>$(KSA_DEV_FOLDER)\Brutal.Core.Numerics.dll</HintPath>
+    </Reference>
+    <Reference Include="Brutal.Texture">
+      <HintPath>$(KSA_DEV_FOLDER)\Brutal.Texture.dll</HintPath>
+    </Reference>
+    <Reference Include="Brutal.Stb.Texture">
+      <HintPath>$(KSA_DEV_FOLDER)\Brutal.Stb.Texture.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StarMap.API" Version="0.3.4" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="Build">
+    <Exec Command="./AfterBuild.sh $(ProjectDir) $(TargetDir)" Condition=" '$(OS)' != 'Windows_NT' " />
+    <Exec Command="AfterBuild.bat $(ProjectDir) $(TargetDir)" Condition=" '$(OS)' == 'Windows_NT' " />
+  </Target>
+
+
+</Project>
