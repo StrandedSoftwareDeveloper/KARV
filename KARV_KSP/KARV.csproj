@@ -44,34 +44,34 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
-      <HintPath>references\UnityEngine.dll</HintPath>
+      <HintPath>$(KSP_DEV_FOLDER)\KSP_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>references\UnityEngine.UI.dll</HintPath>
+      <HintPath>$(KSP_DEV_FOLDER)\KSP_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UIModule">
-      <HintPath>references\UnityEngine.UIModule.dll</HintPath>
+      <HintPath>$(KSP_DEV_FOLDER)\KSP_Data\Managed\UnityEngine.UIModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UIElementsModule">
-      <HintPath>references\UnityEngine.UIElementsModule.dll</HintPath>
+      <HintPath>$(KSP_DEV_FOLDER)\KSP_Data\Managed\UnityEngine.UIElementsModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.InputModule">
-      <HintPath>references\UnityEngine.InputModule.dll</HintPath>
+      <HintPath>$(KSP_DEV_FOLDER)\KSP_Data\Managed\UnityEngine.InputModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>references\UnityEngine.InputLegacyModule.dll</HintPath>
+      <HintPath>$(KSP_DEV_FOLDER)\KSP_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>references\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>$(KSP_DEV_FOLDER)\KSP_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>references\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(KSP_DEV_FOLDER)\KSP_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>references\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(KSP_DEV_FOLDER)\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>references\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>$(KSP_DEV_FOLDER)\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

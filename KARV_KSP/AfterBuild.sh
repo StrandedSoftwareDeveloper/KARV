@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 mkdir -p KARV
-gcc src/c/libkarv.c -o KARV/libkarv.so -O2 -shared -fPIC
+gcc ../libkarv/libkarv.c -o KARV/libkarv.so -O2 -shared -fPIC
 cp bin/Debug/KARV.dll KARV/
 cp -r modules/ KARV/modules
 rm -r "$KSP_DEV_FOLDER/GameData/KARV/"
