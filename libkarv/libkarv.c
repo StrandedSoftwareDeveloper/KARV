@@ -61,15 +61,20 @@ static FILE *logFile;
 static char *keyboardBuffer = NULL;
 static int32_t kbBufferLen = 0;
 
-static uint8_t *localVram;
-static uint16_t globalWidth = 200;
-static uint16_t globalHeight = 200;
+typedef struct {
+    uint8_t *vram;
+    uint16_t width;
+    uint16_t height;
+    
+    uint8_t *font;
+    int fontWidth;
+    int fontHeight;
+    uint16_t charWidth;
+    uint16_t charHeight;
+} TermGraphicsState;
 
-const uint16_t globalCharWidth = 9;
-const uint16_t globalCharHeight = 16;
-static int globalFontWidth = 0;
-static int globalFontHeight = 0;
-static uint8_t *globalFont = NULL;
+static TermGraphicsState termGraphicsState;
+
 static bool first = true;
 
 static uint16_t cursorX = 0;
@@ -89,12 +94,14 @@ void writeString(const char *str);
 void setup(uint16_t screenWidth, uint16_t screenHeight) {
     logFile = fopen("rvlog.txt", "w");
 
-    globalWidth = screenWidth;
-    globalHeight = screenHeight;
+    termGraphicsState.width = screenWidth;
+    termGraphicsState.height = screenHeight;
+    termGraphicsState.charWidth = 9;
+    termGraphicsState.charHeight = 16;
 
     int n = 0;
-    globalFont = stbi_load("Codepage-437.png", &globalFontWidth, &globalFontHeight, &n, 1);
-    if (globalFont == NULL) {
+    termGraphicsState.font = stbi_load("Codepage-437.png", &termGraphicsState.fontWidth, &termGraphicsState.fontHeight, &n, 1);
+    if (termGraphicsState.font == NULL) {
         fprintf(logFile, "Error: failed to load font\n");
     }
 
@@ -164,9 +171,9 @@ stepRetVal step(uint8_t *vram, char *kbBuffer, int32_t len) {
     keyboardBuffer = kbBuffer;
     kbBufferLen = len;
 
-    localVram = vram;
+    termGraphicsState.vram = vram;
     if (first) {
-        clearScreen(localVram, globalWidth, globalHeight);
+        clearScreen(termGraphicsState.vram, termGraphicsState.width, termGraphicsState.height);
         first = false;
     }
 
@@ -182,9 +189,9 @@ stepRetVal step(uint8_t *vram, char *kbBuffer, int32_t len) {
     }
     
     if (numLoops % 30 >= 15) {
-        drawChar(localVram, globalWidth, globalFont, globalFontWidth, globalCharWidth, globalCharHeight, cursorX, cursorY, 219);
+        drawChar(termGraphicsState.vram, termGraphicsState.width, termGraphicsState.font, termGraphicsState.fontWidth, termGraphicsState.charWidth, termGraphicsState.charHeight, cursorX, cursorY, 219);
     } else {
-        drawChar(localVram, globalWidth, globalFont, globalFontWidth, globalCharWidth, globalCharHeight, cursorX, cursorY, ' ');
+        drawChar(termGraphicsState.vram, termGraphicsState.width, termGraphicsState.font, termGraphicsState.fontWidth, termGraphicsState.charWidth, termGraphicsState.charHeight, cursorX, cursorY, ' ');
     }
     return ret;
 }
@@ -192,7 +199,7 @@ stepRetVal step(uint8_t *vram, char *kbBuffer, int32_t len) {
 void cleanup() {
     fclose(logFile);
     free(ram_image);
-    stbi_image_free(globalFont);
+    stbi_image_free(termGraphicsState.font);
 }
 
 static void DumpState( struct MiniRV32IMAState * core, uint8_t * ram_image )
@@ -362,52 +369,52 @@ void drawChar(uint8_t *vram, uint16_t width, uint8_t *font, int fontWidth, uint1
 }
 
 void scrollUp(int numLines) {
-    const int heightLines = globalHeight / globalCharHeight;
+    const int heightLines = termGraphicsState.height / termGraphicsState.charHeight;
     for (int y=numLines; y<heightLines; y++) {
-        memcpy(&localVram[(y-numLines)*globalWidth*globalCharHeight*4], &localVram[y*globalWidth*globalCharHeight*4], globalWidth*globalCharHeight*4);
+        memcpy(&termGraphicsState.vram[(y-numLines)*termGraphicsState.width*termGraphicsState.charHeight*4], &termGraphicsState.vram[y*termGraphicsState.width*termGraphicsState.charHeight*4], termGraphicsState.width*termGraphicsState.charHeight*4);
     }
     
-    memset(&localVram[(heightLines-numLines)*globalWidth*globalCharHeight*4], 0, numLines*globalWidth*globalCharHeight*4);
+    memset(&termGraphicsState.vram[(heightLines-numLines)*termGraphicsState.width*termGraphicsState.charHeight*4], 0, numLines*termGraphicsState.width*termGraphicsState.charHeight*4);
     
-    cursorY -= globalCharHeight * numLines;
+    cursorY -= termGraphicsState.charHeight * numLines;
 }
 
 //Not really sure how scrolling down is supposed to work...
 void scrollDown(int numLines) {
-    const int heightLines = globalHeight / globalCharHeight;
+    const int heightLines = termGraphicsState.height / termGraphicsState.charHeight;
     for (int y=heightLines-1; y>=numLines; y--) {
-        memcpy(&localVram[y*globalWidth*globalCharHeight*4], &localVram[(y-numLines)*globalWidth*globalCharHeight*4], globalWidth*globalCharHeight*4);
+        memcpy(&termGraphicsState.vram[y*termGraphicsState.width*termGraphicsState.charHeight*4], &termGraphicsState.vram[(y-numLines)*termGraphicsState.width*termGraphicsState.charHeight*4], termGraphicsState.width*termGraphicsState.charHeight*4);
     }
     
-    memset(localVram, 0, numLines*globalWidth*globalCharHeight*4);
+    memset(termGraphicsState.vram, 0, numLines*termGraphicsState.width*termGraphicsState.charHeight*4);
     
     //cursorY -= charHeight * numLines;
 }
 
 void clearFromCursorRight() {
-    for (int y=0; y<globalCharHeight; y++) {
-        memset(&localVram[((cursorY+y)*globalWidth+cursorX)*4], 0, (globalWidth-cursorX)*4);
+    for (int y=0; y<termGraphicsState.charHeight; y++) {
+        memset(&termGraphicsState.vram[((cursorY+y)*termGraphicsState.width+cursorX)*4], 0, (termGraphicsState.width-cursorX)*4);
     }
 }
 
 void clearFromCursorDown() {
     clearFromCursorRight();
-    memset(&localVram[((cursorY+globalCharHeight)*globalWidth*4)], 0, (globalWidth*globalHeight*4)-((cursorY+globalCharHeight)*globalWidth*4));
+    memset(&termGraphicsState.vram[((cursorY+termGraphicsState.charHeight)*termGraphicsState.width*4)], 0, (termGraphicsState.width*termGraphicsState.height*4)-((cursorY+termGraphicsState.charHeight)*termGraphicsState.width*4));
 }
 
 void clearFromCursorLeft() {
-    for (int y=0; y<globalCharHeight; y++) {
-        memset(&localVram[(cursorY+y)*globalWidth*4], 0, cursorX*4);
+    for (int y=0; y<termGraphicsState.charHeight; y++) {
+        memset(&termGraphicsState.vram[(cursorY+y)*termGraphicsState.width*4], 0, cursorX*4);
     }
 }
 
 void clearFromCursorUp() {
     clearFromCursorLeft();
-    memset(localVram, 0, cursorY*globalWidth*4);
+    memset(termGraphicsState.vram, 0, cursorY*termGraphicsState.width*4);
 }
 
 void clearLine() {
-    memset(&localVram[cursorY*globalWidth*4], 0, globalWidth*globalCharHeight*4);
+    memset(&termGraphicsState.vram[cursorY*termGraphicsState.width*4], 0, termGraphicsState.width*termGraphicsState.charHeight*4);
 }
 
 typedef enum {
@@ -440,25 +447,25 @@ void writeChar(char c) {
             }
             
             if (c != '\n' && c != '\r' && c != 8 /*Backspace*/ && c != 7 /*Bell*/) {
-                drawChar(localVram, globalWidth, globalFont, globalFontWidth, globalCharWidth, globalCharHeight, cursorX, cursorY, c);
+                drawChar(termGraphicsState.vram, termGraphicsState.width, termGraphicsState.font, termGraphicsState.fontWidth, termGraphicsState.charWidth, termGraphicsState.charHeight, cursorX, cursorY, c);
             } else {
-                drawChar(localVram, globalWidth, globalFont, globalFontWidth, globalCharWidth, globalCharHeight, cursorX, cursorY, ' ');
+                drawChar(termGraphicsState.vram, termGraphicsState.width, termGraphicsState.font, termGraphicsState.fontWidth, termGraphicsState.charWidth, termGraphicsState.charHeight, cursorX, cursorY, ' ');
             }
             
             if (c == 8 /*Backspace*/) {
-                cursorX -= globalCharWidth;
+                cursorX -= termGraphicsState.charWidth;
                 break;
             } else if (c == 7 /*Bell*/) { //TODO: C'mon, we gotta do *something* with the bell
                 break;
             }
 
-            cursorX += globalCharWidth;
-            if (cursorX >= globalWidth - globalCharWidth || c == '\n') {
+            cursorX += termGraphicsState.charWidth;
+            if (cursorX >= termGraphicsState.width - termGraphicsState.charWidth || c == '\n') {
                 cursorX = 0;
-                cursorY += globalCharHeight;
+                cursorY += termGraphicsState.charHeight;
             }
 
-            if (cursorY > globalHeight - globalCharHeight) {
+            if (cursorY > termGraphicsState.height - termGraphicsState.charHeight) {
                 scrollUp(1);
             }
             break;
@@ -557,7 +564,7 @@ void writeChar(char c) {
                 
                 case 'c': { //Reset terminal to initial state
                     printf("Reset terminal to initial state\n");
-                    clearScreen(localVram, globalWidth, globalHeight);
+                    clearScreen(termGraphicsState.vram, termGraphicsState.width, termGraphicsState.height);
                     cursorX = 0;
                     cursorY = 0;
                     backupCursorX = 0;
@@ -863,25 +870,25 @@ void writeChar(char c) {
                 
                 case 'A': { //Move cursor up numA lines
                     printf("Move cursor up numA lines\n");
-                    cursorY -= globalCharHeight * numA;
+                    cursorY -= termGraphicsState.charHeight * numA;
                     state = NORMAL;
                     break;
                 }
                 case 'B': { //Move cursor down numA lines
                     printf("Move cursor down numA lines\n");
-                    cursorY += globalCharHeight * numA;
+                    cursorY += termGraphicsState.charHeight * numA;
                     state = NORMAL;
                     break;
                 }
                 case 'C': { //Move cursor right numA lines
                     printf("Move cursor right numA lines\n");
-                    cursorX += globalCharWidth * numA;
+                    cursorX += termGraphicsState.charWidth * numA;
                     state = NORMAL;
                     break;
                 }
                 case 'D': { //Move cursor left numA lines
                     printf("Move cursor left numA lines\n");
-                    cursorX -= globalCharWidth * numA;
+                    cursorX -= termGraphicsState.charWidth * numA;
                     state = NORMAL;
                     break;
                 }
@@ -950,7 +957,7 @@ void writeChar(char c) {
                         }
                         case 2: { //Clear entire screen
                             printf("Clear entire screen\n");
-                            clearScreen(localVram, globalWidth, globalHeight);
+                            clearScreen(termGraphicsState.vram,termGraphicsState.width, termGraphicsState.height);
                             state = NORMAL;
                             break;
                         }
@@ -1039,15 +1046,15 @@ void writeChar(char c) {
                 }
                 case 'H': { //Move cursor to screen location numB, numA NOTE: Coordinates come in y, x format, (1, 1) is the top left corner
                     printf("Move cursor to screen location numB, numA\n");
-                    cursorX = (numB - 1) * globalCharWidth;
-                    cursorY = (numA - 1) * globalCharHeight;
+                    cursorX = (numB - 1) * termGraphicsState.charWidth;
+                    cursorY = (numA - 1) * termGraphicsState.charHeight;
                     state = NORMAL;
                     break;
                 }
                 case 'f': { //Move cursor to screen location numB, numA NOTE: Coordinates come in y, x format, (1, 1) is the top left corner
                     printf("Move cursor to screen location numB, numA\n");
-                    cursorX = (numB - 1) * globalCharWidth;
-                    cursorY = (numA - 1) * globalCharHeight;
+                    cursorX = (numB - 1) * termGraphicsState.charWidth;
+                    cursorY = (numA - 1) * termGraphicsState.charHeight;
                     state = NORMAL;
                     break;
                 }
@@ -1323,17 +1330,17 @@ static uint32_t HandleControlStore( uint32_t addy, uint32_t val )
         fprintf(stderr, "Guest tried to set width to %u, but guest-set sizes are not supported yet\n", val);
     } else if (addy == 0x11000004) { //Graphics height
         fprintf(stderr, "Guest tried to set height to %u, but guest-set sizes are not supported yet\n", val);
-    } else if (addy >= 0x1100000C && addy < globalWidth*globalHeight*4+0x1100000C) { //Graphics frame buffer
+    } else if (addy >= 0x1100000C && addy < termGraphicsState.width*termGraphicsState.height*4+0x1100000C) { //Graphics frame buffer
         uint32_t index = addy-0x1100000C;
         uint8_t r = (val >>  0) & 0xFF;
         uint8_t g = (val >>  8) & 0xFF;
         uint8_t b = (val >> 16) & 0xFF;
         uint8_t a = (val >> 24) & 0xFF;
         
-        localVram[index+0] = r;
-        localVram[index+1] = g;
-        localVram[index+2] = b;
-        localVram[index+3] = a;
+        termGraphicsState.vram[index+0] = r;
+        termGraphicsState.vram[index+1] = g;
+        termGraphicsState.vram[index+2] = b;
+        termGraphicsState.vram[index+3] = a;
     }
 	return 0;
 }
@@ -1346,17 +1353,17 @@ static uint32_t HandleControlLoad( uint32_t addy )
     } else if( addy == 0x10000000 && IsKBHit() ) {
 		return ReadKBByte();
     } else if (addy == 0x11000000) { //Graphics width
-        return globalWidth;
+        return termGraphicsState.width;
     } else if (addy == 0x11000004) { //Graphics height
-        return globalHeight;
+        return termGraphicsState.height;
     } else if (addy == 0x11000008) { //Reserved for other graphics data
         return 0;
-    } else if (addy >= 0x1100000C && addy < globalWidth*globalHeight*4+0x1100000C) { //Graphics frame buffer
+    } else if (addy >= 0x1100000C && addy < termGraphicsState.width*termGraphicsState.height*4+0x1100000C) { //Graphics frame buffer
         uint32_t index = addy-0x1100000C;
-        uint32_t r = localVram[index];
-        uint32_t g = localVram[index+1];
-        uint32_t b = localVram[index+2];
-        uint32_t a = localVram[index+3];
+        uint32_t r = termGraphicsState.vram[index];
+        uint32_t g = termGraphicsState.vram[index+1];
+        uint32_t b = termGraphicsState.vram[index+2];
+        uint32_t a = termGraphicsState.vram[index+3];
         uint32_t result = r | g << 8 | b << 16 | a << 24;
         //uint32_t altResult = ((uint32_t*)localVram)[index/4];
         //fprintf(stderr, "result: %x, altResult: %x\n", result, altResult);
