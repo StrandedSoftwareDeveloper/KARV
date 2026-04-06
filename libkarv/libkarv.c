@@ -85,7 +85,7 @@ static uint16_t backupCursorY = 0;
 
 static void DumpState( struct MiniRV32IMAState * core, uint8_t * ram_image );
 
-void clearScreen(uint8_t *vram, uint16_t width, uint16_t height);
+void clearScreen(TermGraphicsState *tgState);
 void drawChar(uint8_t *vram, uint16_t width, uint8_t *font, int fontWidth, uint16_t charWidth, uint16_t charHeight, uint16_t x, uint16_t y, uint8_t c);
 void writeChar(char c);
 void writeArray(const char *str, int len);
@@ -173,7 +173,7 @@ stepRetVal step(uint8_t *vram, char *kbBuffer, int32_t len) {
 
     termGraphicsState.vram = vram;
     if (first) {
-        clearScreen(termGraphicsState.vram, termGraphicsState.width, termGraphicsState.height);
+        clearScreen(&termGraphicsState);
         first = false;
     }
 
@@ -345,12 +345,12 @@ int main() {
 }
 #endif
 
-void clearScreen(uint8_t *vram, uint16_t width, uint16_t height) {
-    for (int i=0; i<width*height; i++) {
-        vram[i*4+0] = 0;
-        vram[i*4+1] = 0;
-        vram[i*4+2] = 0;
-        vram[i*4+3] = 255;
+void clearScreen(TermGraphicsState *tgState) {
+    for (int i=0; i<tgState->width*tgState->height; i++) {
+        tgState->vram[i*4+0] = 0;
+        tgState->vram[i*4+1] = 0;
+        tgState->vram[i*4+2] = 0;
+        tgState->vram[i*4+3] = 255;
     }
 }
 
@@ -564,7 +564,7 @@ void writeChar(char c) {
                 
                 case 'c': { //Reset terminal to initial state
                     printf("Reset terminal to initial state\n");
-                    clearScreen(termGraphicsState.vram, termGraphicsState.width, termGraphicsState.height);
+                    clearScreen(&termGraphicsState);
                     cursorX = 0;
                     cursorY = 0;
                     backupCursorX = 0;
@@ -957,7 +957,7 @@ void writeChar(char c) {
                         }
                         case 2: { //Clear entire screen
                             printf("Clear entire screen\n");
-                            clearScreen(termGraphicsState.vram,termGraphicsState.width, termGraphicsState.height);
+                            clearScreen(&termGraphicsState);
                             state = NORMAL;
                             break;
                         }
