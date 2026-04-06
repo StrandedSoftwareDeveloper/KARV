@@ -86,7 +86,7 @@ static uint16_t backupCursorY = 0;
 static void DumpState( struct MiniRV32IMAState * core, uint8_t * ram_image );
 
 void clearScreen(TermGraphicsState *tgState);
-void drawChar(uint8_t *vram, uint16_t width, uint8_t *font, int fontWidth, uint16_t charWidth, uint16_t charHeight, uint16_t x, uint16_t y, uint8_t c);
+void drawChar(TermGraphicsState *tgState, uint16_t x, uint16_t y, uint8_t c);
 void writeChar(char c);
 void writeArray(const char *str, int len);
 void writeString(const char *str);
@@ -189,9 +189,9 @@ stepRetVal step(uint8_t *vram, char *kbBuffer, int32_t len) {
     }
     
     if (numLoops % 30 >= 15) {
-        drawChar(termGraphicsState.vram, termGraphicsState.width, termGraphicsState.font, termGraphicsState.fontWidth, termGraphicsState.charWidth, termGraphicsState.charHeight, cursorX, cursorY, 219);
+        drawChar(&termGraphicsState, cursorX, cursorY, 219);
     } else {
-        drawChar(termGraphicsState.vram, termGraphicsState.width, termGraphicsState.font, termGraphicsState.fontWidth, termGraphicsState.charWidth, termGraphicsState.charHeight, cursorX, cursorY, ' ');
+        drawChar(&termGraphicsState, cursorX, cursorY, ' ');
     }
     return ret;
 }
@@ -354,16 +354,16 @@ void clearScreen(TermGraphicsState *tgState) {
     }
 }
 
-void drawChar(uint8_t *vram, uint16_t width, uint8_t *font, int fontWidth, uint16_t charWidth, uint16_t charHeight, uint16_t x, uint16_t y, uint8_t c) {
-    const int charOffsetX = (c % (fontWidth / charWidth)) * charWidth;
-    const int charOffsetY = (c / (fontWidth / charWidth)) * charHeight;
-    for (int yOffset=0; yOffset<charHeight; yOffset++) {
-        for (int xOffset=0; xOffset<charWidth; xOffset++) {
-            uint8_t val = font[(yOffset+charOffsetY)*fontWidth+(xOffset+charOffsetX)];
-            vram[((y+yOffset)*width+(x+xOffset))*4+0] = val;
-            vram[((y+yOffset)*width+(x+xOffset))*4+1] = val;
-            vram[((y+yOffset)*width+(x+xOffset))*4+2] = val;
-            vram[((y+yOffset)*width+(x+xOffset))*4+3] = 255;
+void drawChar(TermGraphicsState *tgState, uint16_t x, uint16_t y, uint8_t c) {
+    const int charOffsetX = (c % (tgState->fontWidth / tgState->charWidth)) * tgState->charWidth;
+    const int charOffsetY = (c / (tgState->fontWidth / tgState->charWidth)) * tgState->charHeight;
+    for (int yOffset=0; yOffset<tgState->charHeight; yOffset++) {
+        for (int xOffset=0; xOffset<tgState->charWidth; xOffset++) {
+            uint8_t val = tgState->font[(yOffset+charOffsetY)*tgState->fontWidth+(xOffset+charOffsetX)];
+            tgState->vram[((y+yOffset)*tgState->width+(x+xOffset))*4+0] = val;
+            tgState->vram[((y+yOffset)*tgState->width+(x+xOffset))*4+1] = val;
+            tgState->vram[((y+yOffset)*tgState->width+(x+xOffset))*4+2] = val;
+            tgState->vram[((y+yOffset)*tgState->width+(x+xOffset))*4+3] = 255;
         }
     }
 }
@@ -447,9 +447,9 @@ void writeChar(char c) {
             }
             
             if (c != '\n' && c != '\r' && c != 8 /*Backspace*/ && c != 7 /*Bell*/) {
-                drawChar(termGraphicsState.vram, termGraphicsState.width, termGraphicsState.font, termGraphicsState.fontWidth, termGraphicsState.charWidth, termGraphicsState.charHeight, cursorX, cursorY, c);
+                drawChar(&termGraphicsState, cursorX, cursorY, c);
             } else {
-                drawChar(termGraphicsState.vram, termGraphicsState.width, termGraphicsState.font, termGraphicsState.fontWidth, termGraphicsState.charWidth, termGraphicsState.charHeight, cursorX, cursorY, ' ');
+                drawChar(&termGraphicsState, cursorX, cursorY, ' ');
             }
             
             if (c == 8 /*Backspace*/) {
