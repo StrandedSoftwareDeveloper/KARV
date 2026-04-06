@@ -10,7 +10,7 @@
  | To test: Run `$ tcc -g -lX11 -DKARV_TEST -run path/to/libkarv.c`             |
  | from a folder with `linux.bin` and `Codepage-437.png`                        |
 \*------------------------------------------------------------------------------*/
-//#define KARV_TEST //Uncomment this line for LSP in the test harness code
+#define KARV_TEST //Uncomment this line for LSP in the test harness code
 
 #ifdef KARV_TEST
 #define CNFG_IMPLEMENTATION
@@ -87,9 +87,9 @@ static void DumpState( struct MiniRV32IMAState * core, uint8_t * ram_image );
 
 void clearScreen(TermGraphicsState *tgState);
 void drawChar(TermGraphicsState *tgState, uint16_t x, uint16_t y, uint8_t c);
-void writeChar(char c);
-void writeArray(const char *str, int len);
-void writeString(const char *str);
+void writeChar(TermGraphicsState *tgState, char c);
+void writeArray(TermGraphicsState *tgState, const char *str, int len);
+void writeString(TermGraphicsState *tgState, const char *str);
 
 void setup(uint16_t screenWidth, uint16_t screenHeight) {
     logFile = fopen("rvlog.txt", "w");
@@ -434,7 +434,7 @@ typedef enum {
     ESC_BRACKET_SEMI,
 } TerminalState;
 
-void writeChar(char c) {
+void writeChar(TermGraphicsState *tgState, char c) {
     static TerminalState state = NORMAL;
     static int numA = 0;
     static int numB = 0;
@@ -447,25 +447,25 @@ void writeChar(char c) {
             }
             
             if (c != '\n' && c != '\r' && c != 8 /*Backspace*/ && c != 7 /*Bell*/) {
-                drawChar(&termGraphicsState, cursorX, cursorY, c);
+                drawChar(tgState, cursorX, cursorY, c);
             } else {
-                drawChar(&termGraphicsState, cursorX, cursorY, ' ');
+                drawChar(tgState, cursorX, cursorY, ' ');
             }
             
             if (c == 8 /*Backspace*/) {
-                cursorX -= termGraphicsState.charWidth;
+                cursorX -= tgState->charWidth;
                 break;
             } else if (c == 7 /*Bell*/) { //TODO: C'mon, we gotta do *something* with the bell
                 break;
             }
 
-            cursorX += termGraphicsState.charWidth;
-            if (cursorX >= termGraphicsState.width - termGraphicsState.charWidth || c == '\n') {
+            cursorX += tgState->charWidth;
+            if (cursorX >= tgState->width - tgState->charWidth || c == '\n') {
                 cursorX = 0;
-                cursorY += termGraphicsState.charHeight;
+                cursorY += tgState->charHeight;
             }
 
-            if (cursorY > termGraphicsState.height - termGraphicsState.charHeight) {
+            if (cursorY > tgState->height - tgState->charHeight) {
                 scrollUp(1);
             }
             break;
@@ -564,7 +564,7 @@ void writeChar(char c) {
                 
                 case 'c': { //Reset terminal to initial state
                     printf("Reset terminal to initial state\n");
-                    clearScreen(&termGraphicsState);
+                    clearScreen(tgState);
                     cursorX = 0;
                     cursorY = 0;
                     backupCursorX = 0;
@@ -870,25 +870,25 @@ void writeChar(char c) {
                 
                 case 'A': { //Move cursor up numA lines
                     printf("Move cursor up numA lines\n");
-                    cursorY -= termGraphicsState.charHeight * numA;
+                    cursorY -= tgState->charHeight * numA;
                     state = NORMAL;
                     break;
                 }
                 case 'B': { //Move cursor down numA lines
                     printf("Move cursor down numA lines\n");
-                    cursorY += termGraphicsState.charHeight * numA;
+                    cursorY += tgState->charHeight * numA;
                     state = NORMAL;
                     break;
                 }
                 case 'C': { //Move cursor right numA lines
                     printf("Move cursor right numA lines\n");
-                    cursorX += termGraphicsState.charWidth * numA;
+                    cursorX += tgState->charWidth * numA;
                     state = NORMAL;
                     break;
                 }
                 case 'D': { //Move cursor left numA lines
                     printf("Move cursor left numA lines\n");
-                    cursorX -= termGraphicsState.charWidth * numA;
+                    cursorX -= tgState->charWidth * numA;
                     state = NORMAL;
                     break;
                 }
@@ -1046,15 +1046,15 @@ void writeChar(char c) {
                 }
                 case 'H': { //Move cursor to screen location numB, numA NOTE: Coordinates come in y, x format, (1, 1) is the top left corner
                     printf("Move cursor to screen location numB, numA\n");
-                    cursorX = (numB - 1) * termGraphicsState.charWidth;
-                    cursorY = (numA - 1) * termGraphicsState.charHeight;
+                    cursorX = (numB - 1) * tgState->charWidth;
+                    cursorY = (numA - 1) * tgState->charHeight;
                     state = NORMAL;
                     break;
                 }
                 case 'f': { //Move cursor to screen location numB, numA NOTE: Coordinates come in y, x format, (1, 1) is the top left corner
                     printf("Move cursor to screen location numB, numA\n");
-                    cursorX = (numB - 1) * termGraphicsState.charWidth;
-                    cursorY = (numA - 1) * termGraphicsState.charHeight;
+                    cursorX = (numB - 1) * tgState->charWidth;
+                    cursorY = (numA - 1) * tgState->charHeight;
                     state = NORMAL;
                     break;
                 }
@@ -1263,23 +1263,23 @@ void writeChar(char c) {
     }
 }
 
-void writeArray(const char *str, int len) {
+void writeArray(TermGraphicsState *tgState, const char *str, int len) {
     for (int i=0; i<len; i++) {
-        writeChar(str[i]);
+        writeChar(tgState, str[i]);
     }
 }
 
-void writeString(const char *str) {
-    writeArray(str, strlen(str));
+void writeString(TermGraphicsState *tgState, const char *str) {
+    writeArray(tgState, str, strlen(str));
 }
 
-void VRAMnPrintf(unsigned long size, const char *format, ...) {
+void VRAMnPrintf(TermGraphicsState *tgState, unsigned long size, const char *format, ...) {
     va_list va;
     va_start(va, format);
 
     char *buffer = malloc(size);
     vsnprintf(buffer, size, format, va);
-    writeString(buffer);
+    writeString(tgState, buffer);
     free(buffer);
 
     va_end(va);
@@ -1323,7 +1323,7 @@ static uint32_t HandleControlStore( uint32_t addy, uint32_t val )
 	{
 		fprintf(logFile, "%c", val);
         fflush(logFile);
-        writeChar(val);
+        writeChar(&termGraphicsState, val);
 		//printf("%c", val);
         //fflush(stdout);
 	} else if (addy == 0x11000000) { //Graphics width
@@ -1377,14 +1377,14 @@ static void HandleOtherCSRWrite( uint8_t * image, uint16_t csrno, uint32_t value
 {
 	if( csrno == 0x136 )
 	{
-        VRAMnPrintf(16, "%d", value); //32 bit number in decimal can't have more than 10 digits
+        VRAMnPrintf(&termGraphicsState, 16, "%d", value); //32 bit number in decimal can't have more than 10 digits
 		fprintf( logFile, "%d", value );
         fflush(logFile);
 		//printf( "%d", value ); fflush( stdout );
 	}
 	if( csrno == 0x137 )
 	{
-        VRAMnPrintf(16, "%08x", value); //32 bit number in decimal can't have more than 8 digits
+        VRAMnPrintf(&termGraphicsState, 16, "%08x", value); //32 bit number in decimal can't have more than 8 digits
         fprintf( logFile, "%08x", value );
         fflush(logFile);
 		//printf( "%08x", value ); fflush( stdout );
@@ -1405,7 +1405,7 @@ static void HandleOtherCSRWrite( uint8_t * image, uint16_t csrno, uint32_t value
 			ptrend++;
 		}
 		if( ptrend != ptrstart ) {
-            writeArray((char *)image + ptrstart, ptrend - ptrstart);
+            writeArray(&termGraphicsState, (char *)image + ptrstart, ptrend - ptrstart);
             fwrite( image + ptrstart, ptrend - ptrstart, 1, logFile );
             fflush(logFile);
 			//fwrite( image + ptrstart, ptrend - ptrstart, 1, stdout );
@@ -1413,7 +1413,7 @@ static void HandleOtherCSRWrite( uint8_t * image, uint16_t csrno, uint32_t value
 	}
 	else if( csrno == 0x139 )
 	{
-        writeChar(value);
+        writeChar(&termGraphicsState, value);
         fputc(value, logFile);
         fflush(logFile);
 		//putchar( value ); fflush( stdout );
