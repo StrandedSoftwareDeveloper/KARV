@@ -14,8 +14,8 @@
 
 #ifdef KARV_TEST
 #define CNFG_IMPLEMENTATION
-#include "rawdraw_sf.h"
-#include "os_generic.h"
+#include "externalDeps/rawdraw_sf.h"
+#include "externalDeps/os_generic.h"
 #define STBI_NO_SIMD
 #endif
 
@@ -28,7 +28,7 @@
 #include <string.h>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "externalDeps/stb_image.h"
 
 typedef struct {
     int statusCode;
@@ -49,9 +49,9 @@ uint32_t ram_amt = 64*1024*1024;
 #define MINIRV32_HANDLE_MEM_LOAD_CONTROL( addy, rval ) rval = HandleControlLoad( addy );
 #define MINIRV32_OTHERCSR_WRITE( csrno, value ) HandleOtherCSRWrite( image, csrno, value );
 #define MINIRV32_OTHERCSR_READ( csrno, value ) value = HandleOtherCSRRead( image, csrno );
-#include "mini-rv32ima.h"
+#include "externalDeps/mini-rv32ima.h"
 
-#include "default64mbdtc.h"
+#include "externalDeps/default64mbdtc.h"
 
 static struct MiniRV32IMAState *core;
 static uint8_t *ram_image;//[MINI_RV32_RAM_SIZE];
