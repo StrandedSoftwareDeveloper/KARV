@@ -62,8 +62,8 @@ static char *keyboardBuffer = NULL;
 static int32_t kbBufferLen = 0;
 
 static uint8_t *localVram;
-static uint16_t width = 200;
-static uint16_t height = 200;
+static uint16_t globalWidth = 200;
+static uint16_t globalHeight = 200;
 
 const uint16_t charWidth = 9;
 const uint16_t charHeight = 16;
@@ -80,7 +80,7 @@ static uint16_t backupCursorY = 0;
 
 static void DumpState( struct MiniRV32IMAState * core, uint8_t * ram_image );
 
-void clearScreen();
+void clearScreen(uint8_t *vram, uint16_t width, uint16_t height);
 void drawChar(uint16_t x, uint16_t y, uint8_t c);
 void writeChar(char c);
 void writeArray(const char *str, int len);
@@ -89,8 +89,8 @@ void writeString(const char *str);
 void setup(uint16_t screenWidth, uint16_t screenHeight) {
     logFile = fopen("rvlog.txt", "w");
 
-    width = screenWidth;
-    height = screenHeight;
+    globalWidth = screenWidth;
+    globalHeight = screenHeight;
 
     int n = 0;
     font = stbi_load("Codepage-437.png", &fontWidth, &fontHeight, &n, 1);
@@ -166,7 +166,7 @@ stepRetVal step(uint8_t *vram, char *kbBuffer, int32_t len) {
 
     localVram = vram;
     if (first) {
-        clearScreen();
+        clearScreen(localVram, globalWidth, globalHeight);
         first = false;
     }
 
@@ -338,12 +338,12 @@ int main() {
 }
 #endif
 
-void clearScreen() {
+void clearScreen(uint8_t *vram, uint16_t width, uint16_t height) {
     for (int i=0; i<width*height; i++) {
-        localVram[i*4+0] = 0;
-        localVram[i*4+1] = 0;
-        localVram[i*4+2] = 0;
-        localVram[i*4+3] = 255;
+        vram[i*4+0] = 0;
+        vram[i*4+1] = 0;
+        vram[i*4+2] = 0;
+        vram[i*4+3] = 255;
     }
 }
 
@@ -353,61 +353,61 @@ void drawChar(uint16_t x, uint16_t y, uint8_t c) {
     for (int yOffset=0; yOffset<charHeight; yOffset++) {
         for (int xOffset=0; xOffset<charWidth; xOffset++) {
             uint8_t val = font[(yOffset+charOffsetY)*fontWidth+(xOffset+charOffsetX)];
-            localVram[((y+yOffset)*width+(x+xOffset))*4+0] = val;
-            localVram[((y+yOffset)*width+(x+xOffset))*4+1] = val;
-            localVram[((y+yOffset)*width+(x+xOffset))*4+2] = val;
-            localVram[((y+yOffset)*width+(x+xOffset))*4+3] = 255;
+            localVram[((y+yOffset)*globalWidth+(x+xOffset))*4+0] = val;
+            localVram[((y+yOffset)*globalWidth+(x+xOffset))*4+1] = val;
+            localVram[((y+yOffset)*globalWidth+(x+xOffset))*4+2] = val;
+            localVram[((y+yOffset)*globalWidth+(x+xOffset))*4+3] = 255;
         }
     }
 }
 
 void scrollUp(int numLines) {
-    const int heightLines = height / charHeight;
+    const int heightLines = globalHeight / charHeight;
     for (int y=numLines; y<heightLines; y++) {
-        memcpy(&localVram[(y-numLines)*width*charHeight*4], &localVram[y*width*charHeight*4], width*charHeight*4);
+        memcpy(&localVram[(y-numLines)*globalWidth*charHeight*4], &localVram[y*globalWidth*charHeight*4], globalWidth*charHeight*4);
     }
     
-    memset(&localVram[(heightLines-numLines)*width*charHeight*4], 0, numLines*width*charHeight*4);
+    memset(&localVram[(heightLines-numLines)*globalWidth*charHeight*4], 0, numLines*globalWidth*charHeight*4);
     
     cursorY -= charHeight * numLines;
 }
 
 //Not really sure how scrolling down is supposed to work...
 void scrollDown(int numLines) {
-    const int heightLines = height / charHeight;
+    const int heightLines = globalHeight / charHeight;
     for (int y=heightLines-1; y>=numLines; y--) {
-        memcpy(&localVram[y*width*charHeight*4], &localVram[(y-numLines)*width*charHeight*4], width*charHeight*4);
+        memcpy(&localVram[y*globalWidth*charHeight*4], &localVram[(y-numLines)*globalWidth*charHeight*4], globalWidth*charHeight*4);
     }
     
-    memset(localVram, 0, numLines*width*charHeight*4);
+    memset(localVram, 0, numLines*globalWidth*charHeight*4);
     
     //cursorY -= charHeight * numLines;
 }
 
 void clearFromCursorRight() {
     for (int y=0; y<charHeight; y++) {
-        memset(&localVram[((cursorY+y)*width+cursorX)*4], 0, (width-cursorX)*4);
+        memset(&localVram[((cursorY+y)*globalWidth+cursorX)*4], 0, (globalWidth-cursorX)*4);
     }
 }
 
 void clearFromCursorDown() {
     clearFromCursorRight();
-    memset(&localVram[((cursorY+charHeight)*width*4)], 0, (width*height*4)-((cursorY+charHeight)*width*4));
+    memset(&localVram[((cursorY+charHeight)*globalWidth*4)], 0, (globalWidth*globalHeight*4)-((cursorY+charHeight)*globalWidth*4));
 }
 
 void clearFromCursorLeft() {
     for (int y=0; y<charHeight; y++) {
-        memset(&localVram[(cursorY+y)*width*4], 0, cursorX*4);
+        memset(&localVram[(cursorY+y)*globalWidth*4], 0, cursorX*4);
     }
 }
 
 void clearFromCursorUp() {
     clearFromCursorLeft();
-    memset(localVram, 0, cursorY*width*4);
+    memset(localVram, 0, cursorY*globalWidth*4);
 }
 
 void clearLine() {
-    memset(&localVram[cursorY*width*4], 0, width*charHeight*4);
+    memset(&localVram[cursorY*globalWidth*4], 0, globalWidth*charHeight*4);
 }
 
 typedef enum {
@@ -453,12 +453,12 @@ void writeChar(char c) {
             }
 
             cursorX += charWidth;
-            if (cursorX >= width - charWidth || c == '\n') {
+            if (cursorX >= globalWidth - charWidth || c == '\n') {
                 cursorX = 0;
                 cursorY += charHeight;
             }
 
-            if (cursorY > height - charHeight) {
+            if (cursorY > globalHeight - charHeight) {
                 scrollUp(1);
             }
             break;
@@ -557,7 +557,7 @@ void writeChar(char c) {
                 
                 case 'c': { //Reset terminal to initial state
                     printf("Reset terminal to initial state\n");
-                    clearScreen();
+                    clearScreen(localVram, globalWidth, globalHeight);
                     cursorX = 0;
                     cursorY = 0;
                     backupCursorX = 0;
@@ -950,7 +950,7 @@ void writeChar(char c) {
                         }
                         case 2: { //Clear entire screen
                             printf("Clear entire screen\n");
-                            clearScreen();
+                            clearScreen(localVram, globalWidth, globalHeight);
                             state = NORMAL;
                             break;
                         }
@@ -1323,7 +1323,7 @@ static uint32_t HandleControlStore( uint32_t addy, uint32_t val )
         fprintf(stderr, "Guest tried to set width to %u, but guest-set sizes are not supported yet\n", val);
     } else if (addy == 0x11000004) { //Graphics height
         fprintf(stderr, "Guest tried to set height to %u, but guest-set sizes are not supported yet\n", val);
-    } else if (addy >= 0x1100000C && addy < width*height*4+0x1100000C) { //Graphics frame buffer
+    } else if (addy >= 0x1100000C && addy < globalWidth*globalHeight*4+0x1100000C) { //Graphics frame buffer
         uint32_t index = addy-0x1100000C;
         uint8_t r = (val >>  0) & 0xFF;
         uint8_t g = (val >>  8) & 0xFF;
@@ -1346,12 +1346,12 @@ static uint32_t HandleControlLoad( uint32_t addy )
     } else if( addy == 0x10000000 && IsKBHit() ) {
 		return ReadKBByte();
     } else if (addy == 0x11000000) { //Graphics width
-        return width;
+        return globalWidth;
     } else if (addy == 0x11000004) { //Graphics height
-        return height;
+        return globalHeight;
     } else if (addy == 0x11000008) { //Reserved for other graphics data
         return 0;
-    } else if (addy >= 0x1100000C && addy < width*height*4+0x1100000C) { //Graphics frame buffer
+    } else if (addy >= 0x1100000C && addy < globalWidth*globalHeight*4+0x1100000C) { //Graphics frame buffer
         uint32_t index = addy-0x1100000C;
         uint32_t r = localVram[index];
         uint32_t g = localVram[index+1];
