@@ -65,11 +65,11 @@ static uint8_t *localVram;
 static uint16_t globalWidth = 200;
 static uint16_t globalHeight = 200;
 
-const uint16_t charWidth = 9;
-const uint16_t charHeight = 16;
-static int fontWidth = 0;
-static int fontHeight = 0;
-static uint8_t *font = NULL;
+const uint16_t globalCharWidth = 9;
+const uint16_t globalCharHeight = 16;
+static int globalFontWidth = 0;
+static int globalFontHeight = 0;
+static uint8_t *globalFont = NULL;
 static bool first = true;
 
 static uint16_t cursorX = 0;
@@ -81,7 +81,7 @@ static uint16_t backupCursorY = 0;
 static void DumpState( struct MiniRV32IMAState * core, uint8_t * ram_image );
 
 void clearScreen(uint8_t *vram, uint16_t width, uint16_t height);
-void drawChar(uint16_t x, uint16_t y, uint8_t c);
+void drawChar(uint8_t *vram, uint16_t width, uint8_t *font, int fontWidth, uint16_t charWidth, uint16_t charHeight, uint16_t x, uint16_t y, uint8_t c);
 void writeChar(char c);
 void writeArray(const char *str, int len);
 void writeString(const char *str);
@@ -93,8 +93,8 @@ void setup(uint16_t screenWidth, uint16_t screenHeight) {
     globalHeight = screenHeight;
 
     int n = 0;
-    font = stbi_load("Codepage-437.png", &fontWidth, &fontHeight, &n, 1);
-    if (font == NULL) {
+    globalFont = stbi_load("Codepage-437.png", &globalFontWidth, &globalFontHeight, &n, 1);
+    if (globalFont == NULL) {
         fprintf(logFile, "Error: failed to load font\n");
     }
 
@@ -182,9 +182,9 @@ stepRetVal step(uint8_t *vram, char *kbBuffer, int32_t len) {
     }
     
     if (numLoops % 30 >= 15) {
-        drawChar(cursorX, cursorY, 219);
+        drawChar(localVram, globalWidth, globalFont, globalFontWidth, globalCharWidth, globalCharHeight, cursorX, cursorY, 219);
     } else {
-        drawChar(cursorX, cursorY, ' ');
+        drawChar(localVram, globalWidth, globalFont, globalFontWidth, globalCharWidth, globalCharHeight, cursorX, cursorY, ' ');
     }
     return ret;
 }
@@ -192,7 +192,7 @@ stepRetVal step(uint8_t *vram, char *kbBuffer, int32_t len) {
 void cleanup() {
     fclose(logFile);
     free(ram_image);
-    stbi_image_free(font);
+    stbi_image_free(globalFont);
 }
 
 static void DumpState( struct MiniRV32IMAState * core, uint8_t * ram_image )
@@ -347,56 +347,56 @@ void clearScreen(uint8_t *vram, uint16_t width, uint16_t height) {
     }
 }
 
-void drawChar(uint16_t x, uint16_t y, uint8_t c) {
+void drawChar(uint8_t *vram, uint16_t width, uint8_t *font, int fontWidth, uint16_t charWidth, uint16_t charHeight, uint16_t x, uint16_t y, uint8_t c) {
     const int charOffsetX = (c % (fontWidth / charWidth)) * charWidth;
     const int charOffsetY = (c / (fontWidth / charWidth)) * charHeight;
     for (int yOffset=0; yOffset<charHeight; yOffset++) {
         for (int xOffset=0; xOffset<charWidth; xOffset++) {
             uint8_t val = font[(yOffset+charOffsetY)*fontWidth+(xOffset+charOffsetX)];
-            localVram[((y+yOffset)*globalWidth+(x+xOffset))*4+0] = val;
-            localVram[((y+yOffset)*globalWidth+(x+xOffset))*4+1] = val;
-            localVram[((y+yOffset)*globalWidth+(x+xOffset))*4+2] = val;
-            localVram[((y+yOffset)*globalWidth+(x+xOffset))*4+3] = 255;
+            vram[((y+yOffset)*width+(x+xOffset))*4+0] = val;
+            vram[((y+yOffset)*width+(x+xOffset))*4+1] = val;
+            vram[((y+yOffset)*width+(x+xOffset))*4+2] = val;
+            vram[((y+yOffset)*width+(x+xOffset))*4+3] = 255;
         }
     }
 }
 
 void scrollUp(int numLines) {
-    const int heightLines = globalHeight / charHeight;
+    const int heightLines = globalHeight / globalCharHeight;
     for (int y=numLines; y<heightLines; y++) {
-        memcpy(&localVram[(y-numLines)*globalWidth*charHeight*4], &localVram[y*globalWidth*charHeight*4], globalWidth*charHeight*4);
+        memcpy(&localVram[(y-numLines)*globalWidth*globalCharHeight*4], &localVram[y*globalWidth*globalCharHeight*4], globalWidth*globalCharHeight*4);
     }
     
-    memset(&localVram[(heightLines-numLines)*globalWidth*charHeight*4], 0, numLines*globalWidth*charHeight*4);
+    memset(&localVram[(heightLines-numLines)*globalWidth*globalCharHeight*4], 0, numLines*globalWidth*globalCharHeight*4);
     
-    cursorY -= charHeight * numLines;
+    cursorY -= globalCharHeight * numLines;
 }
 
 //Not really sure how scrolling down is supposed to work...
 void scrollDown(int numLines) {
-    const int heightLines = globalHeight / charHeight;
+    const int heightLines = globalHeight / globalCharHeight;
     for (int y=heightLines-1; y>=numLines; y--) {
-        memcpy(&localVram[y*globalWidth*charHeight*4], &localVram[(y-numLines)*globalWidth*charHeight*4], globalWidth*charHeight*4);
+        memcpy(&localVram[y*globalWidth*globalCharHeight*4], &localVram[(y-numLines)*globalWidth*globalCharHeight*4], globalWidth*globalCharHeight*4);
     }
     
-    memset(localVram, 0, numLines*globalWidth*charHeight*4);
+    memset(localVram, 0, numLines*globalWidth*globalCharHeight*4);
     
     //cursorY -= charHeight * numLines;
 }
 
 void clearFromCursorRight() {
-    for (int y=0; y<charHeight; y++) {
+    for (int y=0; y<globalCharHeight; y++) {
         memset(&localVram[((cursorY+y)*globalWidth+cursorX)*4], 0, (globalWidth-cursorX)*4);
     }
 }
 
 void clearFromCursorDown() {
     clearFromCursorRight();
-    memset(&localVram[((cursorY+charHeight)*globalWidth*4)], 0, (globalWidth*globalHeight*4)-((cursorY+charHeight)*globalWidth*4));
+    memset(&localVram[((cursorY+globalCharHeight)*globalWidth*4)], 0, (globalWidth*globalHeight*4)-((cursorY+globalCharHeight)*globalWidth*4));
 }
 
 void clearFromCursorLeft() {
-    for (int y=0; y<charHeight; y++) {
+    for (int y=0; y<globalCharHeight; y++) {
         memset(&localVram[(cursorY+y)*globalWidth*4], 0, cursorX*4);
     }
 }
@@ -407,7 +407,7 @@ void clearFromCursorUp() {
 }
 
 void clearLine() {
-    memset(&localVram[cursorY*globalWidth*4], 0, globalWidth*charHeight*4);
+    memset(&localVram[cursorY*globalWidth*4], 0, globalWidth*globalCharHeight*4);
 }
 
 typedef enum {
@@ -440,25 +440,25 @@ void writeChar(char c) {
             }
             
             if (c != '\n' && c != '\r' && c != 8 /*Backspace*/ && c != 7 /*Bell*/) {
-                drawChar(cursorX, cursorY, c);
+                drawChar(localVram, globalWidth, globalFont, globalFontWidth, globalCharWidth, globalCharHeight, cursorX, cursorY, c);
             } else {
-                drawChar(cursorX, cursorY, ' ');
+                drawChar(localVram, globalWidth, globalFont, globalFontWidth, globalCharWidth, globalCharHeight, cursorX, cursorY, ' ');
             }
             
             if (c == 8 /*Backspace*/) {
-                cursorX -= charWidth;
+                cursorX -= globalCharWidth;
                 break;
             } else if (c == 7 /*Bell*/) { //TODO: C'mon, we gotta do *something* with the bell
                 break;
             }
 
-            cursorX += charWidth;
-            if (cursorX >= globalWidth - charWidth || c == '\n') {
+            cursorX += globalCharWidth;
+            if (cursorX >= globalWidth - globalCharWidth || c == '\n') {
                 cursorX = 0;
-                cursorY += charHeight;
+                cursorY += globalCharHeight;
             }
 
-            if (cursorY > globalHeight - charHeight) {
+            if (cursorY > globalHeight - globalCharHeight) {
                 scrollUp(1);
             }
             break;
@@ -863,25 +863,25 @@ void writeChar(char c) {
                 
                 case 'A': { //Move cursor up numA lines
                     printf("Move cursor up numA lines\n");
-                    cursorY -= charHeight * numA;
+                    cursorY -= globalCharHeight * numA;
                     state = NORMAL;
                     break;
                 }
                 case 'B': { //Move cursor down numA lines
                     printf("Move cursor down numA lines\n");
-                    cursorY += charHeight * numA;
+                    cursorY += globalCharHeight * numA;
                     state = NORMAL;
                     break;
                 }
                 case 'C': { //Move cursor right numA lines
                     printf("Move cursor right numA lines\n");
-                    cursorX += charWidth * numA;
+                    cursorX += globalCharWidth * numA;
                     state = NORMAL;
                     break;
                 }
                 case 'D': { //Move cursor left numA lines
                     printf("Move cursor left numA lines\n");
-                    cursorX -= charWidth * numA;
+                    cursorX -= globalCharWidth * numA;
                     state = NORMAL;
                     break;
                 }
@@ -1039,15 +1039,15 @@ void writeChar(char c) {
                 }
                 case 'H': { //Move cursor to screen location numB, numA NOTE: Coordinates come in y, x format, (1, 1) is the top left corner
                     printf("Move cursor to screen location numB, numA\n");
-                    cursorX = (numB - 1) * charWidth;
-                    cursorY = (numA - 1) * charHeight;
+                    cursorX = (numB - 1) * globalCharWidth;
+                    cursorY = (numA - 1) * globalCharHeight;
                     state = NORMAL;
                     break;
                 }
                 case 'f': { //Move cursor to screen location numB, numA NOTE: Coordinates come in y, x format, (1, 1) is the top left corner
                     printf("Move cursor to screen location numB, numA\n");
-                    cursorX = (numB - 1) * charWidth;
-                    cursorY = (numA - 1) * charHeight;
+                    cursorX = (numB - 1) * globalCharWidth;
+                    cursorY = (numA - 1) * globalCharHeight;
                     state = NORMAL;
                     break;
                 }
