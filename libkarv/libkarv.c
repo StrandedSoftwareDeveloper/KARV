@@ -381,13 +381,13 @@ void scrollUp(TermGraphicsState *tgState, int numLines) {
 }
 
 //Not really sure how scrolling down is supposed to work...
-void scrollDown(int numLines) {
-    const int heightLines = termGraphicsState.height / termGraphicsState.charHeight;
+void scrollDown(TermGraphicsState *tgState, int numLines) {
+    const int heightLines = tgState->height / tgState->charHeight;
     for (int y=heightLines-1; y>=numLines; y--) {
-        memcpy(&termGraphicsState.vram[y*termGraphicsState.width*termGraphicsState.charHeight*4], &termGraphicsState.vram[(y-numLines)*termGraphicsState.width*termGraphicsState.charHeight*4], termGraphicsState.width*termGraphicsState.charHeight*4);
+        memcpy(&tgState->vram[y*tgState->width*tgState->charHeight*4], &tgState->vram[(y-numLines)*tgState->width*tgState->charHeight*4], tgState->width*tgState->charHeight*4);
     }
     
-    memset(termGraphicsState.vram, 0, numLines*termGraphicsState.width*termGraphicsState.charHeight*4);
+    memset(tgState->vram, 0, numLines*tgState->width*tgState->charHeight*4);
     
     //cursorY -= charHeight * numLines;
 }
@@ -517,7 +517,7 @@ void writeChar(TermGraphicsState *tgState, char c) {
                 }
                 case 'M': { //Move/scroll window down one line FIXME: I don't think this is quite right...
                     printf("Move/scroll window down one line\n");
-                    scrollDown(1);
+                    scrollDown(tgState, 1);
                     state = NORMAL;
                     break;
                 }
