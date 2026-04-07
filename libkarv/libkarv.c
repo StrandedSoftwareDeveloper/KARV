@@ -406,7 +406,7 @@ void clearFromCursorRight(TermGraphicsState *tgState) {
 
 void clearFromCursorDown(TermGraphicsState *tgState) {
     clearFromCursorRight(tgState);
-    memset(&termGraphicsState.vram[((tgState->cursorY+termGraphicsState.charHeight)*termGraphicsState.width*4)], 0, (termGraphicsState.width*termGraphicsState.height*4)-((tgState->cursorY+termGraphicsState.charHeight)*termGraphicsState.width*4));
+    memset(&tgState->vram[((tgState->cursorY+tgState->charHeight)*tgState->width*4)], 0, (tgState->width*tgState->height*4)-((tgState->cursorY+tgState->charHeight)*tgState->width*4));
 }
 
 void clearFromCursorLeft(TermGraphicsState *tgState) {
@@ -417,7 +417,7 @@ void clearFromCursorLeft(TermGraphicsState *tgState) {
 
 void clearFromCursorUp(TermGraphicsState *tgState) {
     clearFromCursorLeft(tgState);
-    memset(termGraphicsState.vram, 0, tgState->cursorY*termGraphicsState.width*4);
+    memset(tgState->vram, 0, tgState->cursorY*tgState->width*4);
 }
 
 void clearLine(TermGraphicsState *tgState) {
