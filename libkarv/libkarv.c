@@ -392,14 +392,14 @@ void scrollDown(TermGraphicsState *tgState, int numLines) {
     //cursorY -= charHeight * numLines;
 }
 
-void clearFromCursorRight() {
-    for (int y=0; y<termGraphicsState.charHeight; y++) {
-        memset(&termGraphicsState.vram[((cursorY+y)*termGraphicsState.width+cursorX)*4], 0, (termGraphicsState.width-cursorX)*4);
+void clearFromCursorRight(TermGraphicsState *tgState) {
+    for (int y=0; y<tgState->charHeight; y++) {
+        memset(&tgState->vram[((cursorY+y)*tgState->width+cursorX)*4], 0, (tgState->width-cursorX)*4);
     }
 }
 
-void clearFromCursorDown() {
-    clearFromCursorRight();
+void clearFromCursorDown(TermGraphicsState *tgState) {
+    clearFromCursorRight(tgState);
     memset(&termGraphicsState.vram[((cursorY+termGraphicsState.charHeight)*termGraphicsState.width*4)], 0, (termGraphicsState.width*termGraphicsState.height*4)-((cursorY+termGraphicsState.charHeight)*termGraphicsState.width*4));
 }
 
@@ -628,14 +628,14 @@ void writeChar(TermGraphicsState *tgState, char c) {
                 
                 case 'K': { //Clear line from cursor right
                     printf("Clear line from cursor right\n");
-                    clearFromCursorRight();
+                    clearFromCursorRight(tgState);
                     state = NORMAL;
                     break;
                 }
                 
                 case 'J': { //Clear screen from cursor down
                     printf("Clear screen from cursor down\n");
-                    clearFromCursorDown();
+                    clearFromCursorDown(tgState);
                     state = NORMAL;
                     break;
                 }
@@ -918,7 +918,7 @@ void writeChar(TermGraphicsState *tgState, char c) {
                     switch (numA) {
                         case 0: { //Clear line from cursor right
                             printf("Clear line from cursor right\n");
-                            clearFromCursorRight();
+                            clearFromCursorRight(tgState);
                             state = NORMAL;
                             break;
                         }
@@ -946,7 +946,7 @@ void writeChar(TermGraphicsState *tgState, char c) {
                     switch (numA) {
                         case 0: { //Clear screen from cursor down
                             printf("Clear screen from cursor down\n");
-                            clearFromCursorDown();
+                            clearFromCursorDown(tgState);
                             state = NORMAL;
                             break;
                         }
