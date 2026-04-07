@@ -72,16 +72,16 @@ typedef struct {
     int fontHeight;
     uint16_t charWidth;
     uint16_t charHeight;
+    
+    uint16_t cursorX;
+    uint16_t cursorY;
+    uint16_t backupCursorX;
+    uint16_t backupCursorY;
 } TermGraphicsState;
 
 static TermGraphicsState termGraphicsState;
 
 static bool first = true;
-
-static uint16_t cursorX = 0;
-static uint16_t cursorY = 0;
-static uint16_t backupCursorX = 0;
-static uint16_t backupCursorY = 0;
 
 
 static void DumpState( struct MiniRV32IMAState * core, uint8_t * ram_image );
@@ -97,8 +97,14 @@ void setup(uint16_t screenWidth, uint16_t screenHeight) {
 
     termGraphicsState.width = screenWidth;
     termGraphicsState.height = screenHeight;
+    
     termGraphicsState.charWidth = 9;
     termGraphicsState.charHeight = 16;
+    
+    termGraphicsState.cursorX = 0;
+    termGraphicsState.cursorY = 0;
+    termGraphicsState.backupCursorX = 0;
+    termGraphicsState.backupCursorY = 0;
 
     int n = 0;
     termGraphicsState.font = stbi_load("Codepage-437.png", &termGraphicsState.fontWidth, &termGraphicsState.fontHeight, &n, 1);
@@ -190,9 +196,9 @@ stepRetVal step(uint8_t *vram, char *kbBuffer, int32_t len) {
     }
     
     if (numLoops % 30 >= 15) {
-        drawChar(&termGraphicsState, cursorX, cursorY, 219);
+        drawChar(&termGraphicsState, termGraphicsState.cursorX, termGraphicsState.cursorY, 219);
     } else {
-        drawChar(&termGraphicsState, cursorX, cursorY, ' ');
+        drawChar(&termGraphicsState, termGraphicsState.cursorX, termGraphicsState.cursorY, ' ');
     }
     return ret;
 }
@@ -377,7 +383,7 @@ void scrollUp(TermGraphicsState *tgState, int numLines) {
     
     memset(&tgState->vram[(heightLines-numLines)*tgState->width*tgState->charHeight*4], 0, numLines*tgState->width*tgState->charHeight*4);
     
-    cursorY -= tgState->charHeight * numLines;
+    tgState->cursorY -= tgState->charHeight * numLines;
 }
 
 //Not really sure how scrolling down is supposed to work...
@@ -394,28 +400,28 @@ void scrollDown(TermGraphicsState *tgState, int numLines) {
 
 void clearFromCursorRight(TermGraphicsState *tgState) {
     for (int y=0; y<tgState->charHeight; y++) {
-        memset(&tgState->vram[((cursorY+y)*tgState->width+cursorX)*4], 0, (tgState->width-cursorX)*4);
+        memset(&tgState->vram[((tgState->cursorY+y)*tgState->width+tgState->cursorX)*4], 0, (tgState->width-tgState->cursorX)*4);
     }
 }
 
 void clearFromCursorDown(TermGraphicsState *tgState) {
     clearFromCursorRight(tgState);
-    memset(&termGraphicsState.vram[((cursorY+termGraphicsState.charHeight)*termGraphicsState.width*4)], 0, (termGraphicsState.width*termGraphicsState.height*4)-((cursorY+termGraphicsState.charHeight)*termGraphicsState.width*4));
+    memset(&termGraphicsState.vram[((tgState->cursorY+termGraphicsState.charHeight)*termGraphicsState.width*4)], 0, (termGraphicsState.width*termGraphicsState.height*4)-((tgState->cursorY+termGraphicsState.charHeight)*termGraphicsState.width*4));
 }
 
 void clearFromCursorLeft(TermGraphicsState *tgState) {
     for (int y=0; y<tgState->charHeight; y++) {
-        memset(&tgState->vram[(cursorY+y)*tgState->width*4], 0, cursorX*4);
+        memset(&tgState->vram[(tgState->cursorY+y)*tgState->width*4], 0, tgState->cursorX*4);
     }
 }
 
 void clearFromCursorUp(TermGraphicsState *tgState) {
     clearFromCursorLeft(tgState);
-    memset(termGraphicsState.vram, 0, cursorY*termGraphicsState.width*4);
+    memset(termGraphicsState.vram, 0, tgState->cursorY*termGraphicsState.width*4);
 }
 
 void clearLine(TermGraphicsState *tgState) {
-    memset(&tgState->vram[cursorY*tgState->width*4], 0, tgState->width*tgState->charHeight*4);
+    memset(&tgState->vram[tgState->cursorY*tgState->width*4], 0, tgState->width*tgState->charHeight*4);
 }
 
 typedef enum {
@@ -448,25 +454,25 @@ void writeChar(TermGraphicsState *tgState, char c) {
             }
             
             if (c != '\n' && c != '\r' && c != 8 /*Backspace*/ && c != 7 /*Bell*/) {
-                drawChar(tgState, cursorX, cursorY, c);
+                drawChar(tgState, tgState->cursorX, tgState->cursorY, c);
             } else {
-                drawChar(tgState, cursorX, cursorY, ' ');
+                drawChar(tgState, tgState->cursorX, tgState->cursorY, ' ');
             }
             
             if (c == 8 /*Backspace*/) {
-                cursorX -= tgState->charWidth;
+                tgState->cursorX -= tgState->charWidth;
                 break;
             } else if (c == 7 /*Bell*/) { //TODO: C'mon, we gotta do *something* with the bell
                 break;
             }
 
-            cursorX += tgState->charWidth;
-            if (cursorX >= tgState->width - tgState->charWidth || c == '\n') {
-                cursorX = 0;
-                cursorY += tgState->charHeight;
+            tgState->cursorX += tgState->charWidth;
+            if (tgState->cursorX >= tgState->width - tgState->charWidth || c == '\n') {
+                tgState->cursorX = 0;
+                tgState->cursorY += tgState->charHeight;
             }
 
-            if (cursorY > tgState->height - tgState->charHeight) {
+            if (tgState->cursorY > tgState->height - tgState->charHeight) {
                 scrollUp(tgState, 1);
             }
             break;
@@ -529,15 +535,15 @@ void writeChar(TermGraphicsState *tgState, char c) {
                 }
                 case '7': { //Save cursor position and attributes
                     printf("Save cursor position and attributes\n");
-                    backupCursorX = cursorX;
-                    backupCursorY = cursorY;
+                    tgState->backupCursorX = tgState->cursorX;
+                    tgState->backupCursorY = tgState->cursorY;
                     state = NORMAL;
                     break;
                 }
                 case '8': { //Restore cursor position and attributes
                     printf("Restore cursor position and attributes\n");
-                    cursorX = backupCursorX;
-                    cursorY = backupCursorY;
+                    tgState->cursorX = tgState->backupCursorX;
+                    tgState->cursorY = tgState->backupCursorY;
                     state = NORMAL;
                     break;
                 }
@@ -566,10 +572,10 @@ void writeChar(TermGraphicsState *tgState, char c) {
                 case 'c': { //Reset terminal to initial state
                     printf("Reset terminal to initial state\n");
                     clearScreen(tgState);
-                    cursorX = 0;
-                    cursorY = 0;
-                    backupCursorX = 0;
-                    backupCursorY = 0;
+                    tgState->cursorX = 0;
+                    tgState->cursorY = 0;
+                    tgState->backupCursorX = 0;
+                    tgState->backupCursorY = 0;
                     state = NORMAL;
                     break;
                 }
@@ -603,8 +609,8 @@ void writeChar(TermGraphicsState *tgState, char c) {
                 
                 case 'H': { //Move cursor to upper left corner
                     printf("Move cursor to upper left corner\n");
-                    cursorX = 0;
-                    cursorY = 0;
+                    tgState->cursorX = 0;
+                    tgState->cursorY = 0;
                     state = NORMAL;
                     break;
                 }
@@ -614,8 +620,8 @@ void writeChar(TermGraphicsState *tgState, char c) {
                 }
                 case 'f': { //Move cursor to upper left corner
                     printf("Move cursor to upper left corner\n");
-                    cursorX = 0;
-                    cursorY = 0;
+                    tgState->cursorX = 0;
+                    tgState->cursorY = 0;
                     state = NORMAL;
                     break;
                 }
@@ -871,25 +877,25 @@ void writeChar(TermGraphicsState *tgState, char c) {
                 
                 case 'A': { //Move cursor up numA lines
                     printf("Move cursor up numA lines\n");
-                    cursorY -= tgState->charHeight * numA;
+                    tgState->cursorY -= tgState->charHeight * numA;
                     state = NORMAL;
                     break;
                 }
                 case 'B': { //Move cursor down numA lines
                     printf("Move cursor down numA lines\n");
-                    cursorY += tgState->charHeight * numA;
+                    tgState->cursorY += tgState->charHeight * numA;
                     state = NORMAL;
                     break;
                 }
                 case 'C': { //Move cursor right numA lines
                     printf("Move cursor right numA lines\n");
-                    cursorX += tgState->charWidth * numA;
+                    tgState->cursorX += tgState->charWidth * numA;
                     state = NORMAL;
                     break;
                 }
                 case 'D': { //Move cursor left numA lines
                     printf("Move cursor left numA lines\n");
-                    cursorX -= tgState->charWidth * numA;
+                    tgState->cursorX -= tgState->charWidth * numA;
                     state = NORMAL;
                     break;
                 }
@@ -1047,15 +1053,15 @@ void writeChar(TermGraphicsState *tgState, char c) {
                 }
                 case 'H': { //Move cursor to screen location numB, numA NOTE: Coordinates come in y, x format, (1, 1) is the top left corner
                     printf("Move cursor to screen location numB, numA\n");
-                    cursorX = (numB - 1) * tgState->charWidth;
-                    cursorY = (numA - 1) * tgState->charHeight;
+                    tgState->cursorX = (numB - 1) * tgState->charWidth;
+                    tgState->cursorY = (numA - 1) * tgState->charHeight;
                     state = NORMAL;
                     break;
                 }
                 case 'f': { //Move cursor to screen location numB, numA NOTE: Coordinates come in y, x format, (1, 1) is the top left corner
                     printf("Move cursor to screen location numB, numA\n");
-                    cursorX = (numB - 1) * tgState->charWidth;
-                    cursorY = (numA - 1) * tgState->charHeight;
+                    tgState->cursorX = (numB - 1) * tgState->charWidth;
+                    tgState->cursorY = (numA - 1) * tgState->charHeight;
                     state = NORMAL;
                     break;
                 }
@@ -1236,15 +1242,15 @@ void writeChar(TermGraphicsState *tgState, char c) {
             switch (c) {
                 case 'H': { //Move cursor to upper left corner
                     printf("Move cursor to upper left corner\n");
-                    cursorX = 0;
-                    cursorY = 0;
+                    tgState->cursorX = 0;
+                    tgState->cursorY = 0;
                     state = NORMAL;
                     break;
                 }
                 case 'f': { //Move cursor to upper left corner
                     printf("Move cursor to upper left corner\n");
-                    cursorX = 0;
-                    cursorY = 0;
+                    tgState->cursorX = 0;
+                    tgState->cursorY = 0;
                     state = NORMAL;
                     break;
                 }
