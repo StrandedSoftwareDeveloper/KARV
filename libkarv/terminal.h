@@ -1,3 +1,8 @@
+/*------------------------------------------------------------------------------*\
+ | terminal.h Copyright (c) 2025 StrandedSoftwareDeveloper under the MIT License |
+ | Header file for terminal.c                                                    |
+\*------------------------------------------------------------------------------*/
+
 #include <stdint.h>
 
 typedef struct {

@@ -1,3 +1,10 @@
+/*------------------------------------------------------------------------------*\
+ | terminal.c Copyright (c) 2025 StrandedSoftwareDeveloper under the MIT License |
+ | Responsibilities include:                                                     |
+ | - VT100-ish terminal emulator                                                 |
+ | - Bitmap font renderer                                                        |
+\*------------------------------------------------------------------------------*/
+
 #include "terminal.h"
 #include <stdarg.h>
 #include <stdlib.h>
