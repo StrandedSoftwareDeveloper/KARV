@@ -19,6 +19,7 @@
 #define STBI_NO_SIMD
 #endif
 
+#include <ctype.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
