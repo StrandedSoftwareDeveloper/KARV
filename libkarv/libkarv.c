@@ -414,8 +414,8 @@ void clearFromCursorUp(TermGraphicsState *tgState) {
     memset(termGraphicsState.vram, 0, cursorY*termGraphicsState.width*4);
 }
 
-void clearLine() {
-    memset(&termGraphicsState.vram[cursorY*termGraphicsState.width*4], 0, termGraphicsState.width*termGraphicsState.charHeight*4);
+void clearLine(TermGraphicsState *tgState) {
+    memset(&tgState->vram[cursorY*tgState->width*4], 0, tgState->width*tgState->charHeight*4);
 }
 
 typedef enum {
@@ -930,7 +930,7 @@ void writeChar(TermGraphicsState *tgState, char c) {
                         }
                         case 2: { //Clear entire line
                             printf("Clear entire line\n");
-                            clearLine();
+                            clearLine(tgState);
                             state = NORMAL;
                             break;
                         }
