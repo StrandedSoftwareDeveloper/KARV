@@ -403,14 +403,14 @@ void clearFromCursorDown(TermGraphicsState *tgState) {
     memset(&termGraphicsState.vram[((cursorY+termGraphicsState.charHeight)*termGraphicsState.width*4)], 0, (termGraphicsState.width*termGraphicsState.height*4)-((cursorY+termGraphicsState.charHeight)*termGraphicsState.width*4));
 }
 
-void clearFromCursorLeft() {
-    for (int y=0; y<termGraphicsState.charHeight; y++) {
-        memset(&termGraphicsState.vram[(cursorY+y)*termGraphicsState.width*4], 0, cursorX*4);
+void clearFromCursorLeft(TermGraphicsState *tgState) {
+    for (int y=0; y<tgState->charHeight; y++) {
+        memset(&tgState->vram[(cursorY+y)*tgState->width*4], 0, cursorX*4);
     }
 }
 
-void clearFromCursorUp() {
-    clearFromCursorLeft();
+void clearFromCursorUp(TermGraphicsState *tgState) {
+    clearFromCursorLeft(tgState);
     memset(termGraphicsState.vram, 0, cursorY*termGraphicsState.width*4);
 }
 
@@ -924,7 +924,7 @@ void writeChar(TermGraphicsState *tgState, char c) {
                         }
                         case 1: { //Clear line from cursor left
                             printf("Clear line from cursor left\n");
-                            clearFromCursorLeft();
+                            clearFromCursorLeft(tgState);
                             state = NORMAL;
                             break;
                         }
@@ -952,13 +952,13 @@ void writeChar(TermGraphicsState *tgState, char c) {
                         }
                         case 1: { //Clear screen from cursor up
                             printf("Clear screen from cursor up\n");
-                            clearFromCursorUp();
+                            clearFromCursorUp(tgState);
                             state = NORMAL;
                             break;
                         }
                         case 2: { //Clear entire screen
                             printf("Clear entire screen\n");
-                            clearScreen(&termGraphicsState);
+                            clearScreen(tgState);
                             state = NORMAL;
                             break;
                         }
