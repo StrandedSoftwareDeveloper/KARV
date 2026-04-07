@@ -368,15 +368,15 @@ void drawChar(TermGraphicsState *tgState, uint16_t x, uint16_t y, uint8_t c) {
     }
 }
 
-void scrollUp(int numLines) {
-    const int heightLines = termGraphicsState.height / termGraphicsState.charHeight;
+void scrollUp(TermGraphicsState *tgState, int numLines) {
+    const int heightLines = tgState->height / tgState->charHeight;
     for (int y=numLines; y<heightLines; y++) {
-        memcpy(&termGraphicsState.vram[(y-numLines)*termGraphicsState.width*termGraphicsState.charHeight*4], &termGraphicsState.vram[y*termGraphicsState.width*termGraphicsState.charHeight*4], termGraphicsState.width*termGraphicsState.charHeight*4);
+        memcpy(&tgState->vram[(y-numLines)*tgState->width*tgState->charHeight*4], &tgState->vram[y*tgState->width*tgState->charHeight*4], tgState->width*tgState->charHeight*4);
     }
     
-    memset(&termGraphicsState.vram[(heightLines-numLines)*termGraphicsState.width*termGraphicsState.charHeight*4], 0, numLines*termGraphicsState.width*termGraphicsState.charHeight*4);
+    memset(&tgState->vram[(heightLines-numLines)*tgState->width*tgState->charHeight*4], 0, numLines*tgState->width*tgState->charHeight*4);
     
-    cursorY -= termGraphicsState.charHeight * numLines;
+    cursorY -= tgState->charHeight * numLines;
 }
 
 //Not really sure how scrolling down is supposed to work...
@@ -466,7 +466,7 @@ void writeChar(TermGraphicsState *tgState, char c) {
             }
 
             if (cursorY > tgState->height - tgState->charHeight) {
-                scrollUp(1);
+                scrollUp(tgState, 1);
             }
             break;
         }
@@ -510,7 +510,7 @@ void writeChar(TermGraphicsState *tgState, char c) {
                 
                 case 'D': { //Move/scroll window up one line FIXME: I don't think this is quite right...
                     printf("Move/scroll window up one line\n");
-                    scrollUp(1);
+                    scrollUp(tgState, 1);
                     state = NORMAL;
                     break;
                 }
@@ -522,7 +522,7 @@ void writeChar(TermGraphicsState *tgState, char c) {
                 }
                 case 'E': { //Move to next line FIXME: I don't think this is quite right...
                     printf("Move to next line\n");
-                    scrollUp(1);
+                    scrollUp(tgState, 1);
                     state = NORMAL;
                     break;
                 }
