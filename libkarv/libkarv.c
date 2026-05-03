@@ -43,6 +43,8 @@ static int32_t HandleOtherCSRRead( uint8_t * image, uint16_t csrno );
 
 uint32_t ram_amt = 64*1024*1024;
 
+#define TARGET_STEPS_PER_TICK 65536*5
+
 #define MINI_RV32_RAM_SIZE ram_amt
 #define MINIRV32_IMPLEMENTATION
 //#define MINIRV32_RAM_IMAGE_OFFSET 0x0000000
@@ -145,7 +147,7 @@ void setup(uint16_t screenWidth, uint16_t screenHeight) {
     fflush(logFile);
 }
 
-stepRetVal step(uint8_t *vram, char *kbBuffer, int32_t len) {
+stepRetVal step(uint8_t *vram, char *kbBuffer, int32_t len, uint32_t targetSteps) {
     static int numLoops = 0;
     //fprintf(logFile, "\nLoops:%d\n", numLoops);
     //fflush(logFile);
@@ -162,10 +164,10 @@ stepRetVal step(uint8_t *vram, char *kbBuffer, int32_t len) {
     numLoops += 1;
     stepRetVal ret;
     int numRunTotal = 0;
-    while (numRunTotal < 65536*5) {
+    while (numRunTotal < targetSteps) {
         //printf("%d\n", numRunTotal);
         int numRun = 0;
-        ret.statusCode = MiniRV32IMAStep(core, ram_image, 0, 1024, (65536*5)-numRunTotal, &numRun);
+        ret.statusCode = MiniRV32IMAStep(core, ram_image, 0, 1024, (targetSteps)-numRunTotal, &numRun);
         ret.kbBufferLen = kbBufferLen;
         numRunTotal += numRun;
     }
@@ -210,6 +212,11 @@ static void DumpState( struct MiniRV32IMAState * core, uint8_t * ram_image )
 }
 
 #ifdef KARV_TEST
+#define KEY_F5 65474 //Probably only valid on Linux
+#define KEY_F6 65475 //Probably only valid on Linux
+
+bool stepMode = false;
+bool stepNow = true;
 char globalKBBuffer[1024];
 uint32_t globalKBBufferLen = 0;
 bool leftShift = false;
@@ -225,7 +232,17 @@ void HandleKey(int keycode, int bDown) {
         keycode = tolower(keycode); //Apparently keycodes come in as upper case on Windows
         char c = keycode;
         
-        if (keycode == CNFG_KEY_TOP_ARROW) {
+        if (keycode == KEY_F5) { //Toggle pause/run
+            if (stepMode) {
+                stepMode = false;
+                stepNow = true;
+            } else {
+                stepMode = true;
+                stepNow = false;
+            }
+        } else if (keycode == KEY_F6) { //Step
+            stepNow = true;
+        } else if (keycode == CNFG_KEY_TOP_ARROW) {
             if (globalKBBufferLen < 1024 - 3) {
                 globalKBBuffer[globalKBBufferLen++] = 27; //ESC
                 globalKBBuffer[globalKBBufferLen++] = 'O';
@@ -297,19 +314,30 @@ int main() {
     int running = 1;
     for (int i=0; CNFGHandleInput() != 0 && running; i++) {
         double lastTime = OGGetAbsoluteTime();
-        //DumpState(core, ram_image);
         //printf("\n");
-        stepRetVal ret = step((uint8_t*)vram, globalKBBuffer, globalKBBufferLen);
-        globalKBBufferLen = ret.kbBufferLen;
-        switch( ret.statusCode )
-		{
-			case 0: break;
-			case 1: break;//if( do_sleep ) MiniSleep(); *this_ccount += instrs_per_flip; break;
-			case 3: break;//instct = 0; break;
-			case 0x7777: printf("Tried to restart\n");	//syscon code for restart
-			case 0x5555: printf( "POWEROFF@0x%08x%08x\n", core->cycleh, core->cyclel ); running = 0; break; //syscon code for power-off
-			default: printf( "Unknown failure\n" ); break;
-		}
+        if (stepNow) {
+            uint32_t stepsPerTick = TARGET_STEPS_PER_TICK;
+            if (stepMode) {
+                stepsPerTick = 1;
+            }
+            stepRetVal ret = step((uint8_t*)vram, globalKBBuffer, globalKBBufferLen, stepsPerTick);
+        
+            globalKBBufferLen = ret.kbBufferLen;
+            switch( ret.statusCode )
+            {
+                case 0: break;
+                case 1: break;//if( do_sleep ) MiniSleep(); *this_ccount += instrs_per_flip; break;
+                case 3: break;//instct = 0; break;
+                case 0x7777: printf("Tried to restart\n");	//syscon code for restart
+                case 0x5555: printf( "POWEROFF@0x%08x%08x\n", core->cycleh, core->cyclel ); running = 0; break; //syscon code for power-off
+                default: printf( "Unknown failure\n" ); break;
+            }
+            
+            if (stepMode) {
+                DumpState(core, ram_image);
+                stepNow = false;
+            }
+        }
 		
 		CNFGClearFrame();
 		CNFGBlitImage(vram, 0, 0, 600, 600);
