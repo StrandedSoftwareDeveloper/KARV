@@ -18,6 +18,8 @@ namespace KARV
 {
     public class KARVComputer : PartModule
     {
+        public const uint TARGET_STEPS_PER_TICK = 65536*5;
+        
         struct stepRetVal {
             public int statusCode;
             public int kbBufferLen;
@@ -39,7 +41,7 @@ namespace KARV
         [DllImport("libkarv")]
         private static extern void setup(ushort width, ushort height);
         [DllImport("libkarv")]
-        private static unsafe extern stepRetVal step(byte *buffer, char *kbBuffer, int len);
+        private static unsafe extern stepRetVal step(byte *buffer, char *kbBuffer, int len, uint targetSteps);
         [DllImport("libkarv")]
         private static extern void cleanup();
 
@@ -162,7 +164,7 @@ namespace KARV
                 unsafe {
                     fixed (byte *buffer = vram) {
                         fixed (char *kbBuffer = keyboardBuffer.ToArray()) {
-                            ret = step(buffer, kbBuffer, keyboardBuffer.Count);
+                            ret = step(buffer, kbBuffer, keyboardBuffer.Count, TARGET_STEPS_PER_TICK);
                         }
                     }
                 }

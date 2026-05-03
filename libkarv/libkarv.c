@@ -12,13 +12,13 @@
 //#define KARV_TEST //Uncomment this line for LSP in the test harness code
 
 #ifdef KARV_TEST
+#include <ctype.h>
 #define CNFG_IMPLEMENTATION
 #include "externalDeps/rawdraw_sf.h"
 #include "externalDeps/os_generic.h"
 #define STBI_NO_SIMD
 #endif
 
-#include <ctype.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
