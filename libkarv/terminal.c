@@ -40,7 +40,12 @@ void scrollUp(TermGraphicsState *tgState, int numLines) {
         memcpy(&tgState->vram[(y-numLines)*tgState->width*tgState->charHeight*4], &tgState->vram[y*tgState->width*tgState->charHeight*4], tgState->width*tgState->charHeight*4);
     }
     
-    memset(&tgState->vram[(heightLines-numLines)*tgState->width*tgState->charHeight*4], 0, numLines*tgState->width*tgState->charHeight*4);
+    for (int i=(heightLines-numLines)*tgState->charHeight*tgState->width; i<tgState->width*tgState->height; i++) {
+        tgState->vram[i*4+0] = 0;
+        tgState->vram[i*4+1] = 0;
+        tgState->vram[i*4+2] = 0;
+        tgState->vram[i*4+3] = 255;
+    }
     
     tgState->cursorY -= tgState->charHeight * numLines;
 }
@@ -52,20 +57,35 @@ void scrollDown(TermGraphicsState *tgState, int numLines) {
         memcpy(&tgState->vram[y*tgState->width*tgState->charHeight*4], &tgState->vram[(y-numLines)*tgState->width*tgState->charHeight*4], tgState->width*tgState->charHeight*4);
     }
     
-    memset(tgState->vram, 0, numLines*tgState->width*tgState->charHeight*4);
+    for (int i=0; i<numLines*tgState->charHeight*tgState->width; i++) {
+        tgState->vram[i*4+0] = 0;
+        tgState->vram[i*4+1] = 0;
+        tgState->vram[i*4+2] = 0;
+        tgState->vram[i*4+3] = 255;
+    }
     
     //cursorY -= charHeight * numLines;
 }
 
 void clearFromCursorRight(TermGraphicsState *tgState) {
     for (int y=0; y<tgState->charHeight; y++) {
-        memset(&tgState->vram[((tgState->cursorY+y)*tgState->width+tgState->cursorX)*4], 0, (tgState->width-tgState->cursorX)*4);
+        for (int x=tgState->cursorX*tgState->charWidth; x<tgState->width; x++) {
+            tgState->vram[(y*tgState->width+x)*4+0] = 0;
+            tgState->vram[(y*tgState->width+x)*4+1] = 0;
+            tgState->vram[(y*tgState->width+x)*4+2] = 0;
+            tgState->vram[(y*tgState->width+x)*4+3] = 255;
+        }
     }
 }
 
 void clearFromCursorDown(TermGraphicsState *tgState) {
     clearFromCursorRight(tgState);
-    memset(&tgState->vram[((tgState->cursorY+tgState->charHeight)*tgState->width*4)], 0, (tgState->width*tgState->height*4)-((tgState->cursorY+tgState->charHeight)*tgState->width*4));
+    for (int i=(tgState->cursorY+tgState->charHeight)*tgState->width; i<tgState->width*tgState->height; i++) {
+        tgState->vram[i*4+0] = 0;
+        tgState->vram[i*4+1] = 0;
+        tgState->vram[i*4+2] = 0;
+        tgState->vram[i*4+3] = 255;
+    }
 }
 
 void clearFromCursorLeft(TermGraphicsState *tgState) {
@@ -76,11 +96,21 @@ void clearFromCursorLeft(TermGraphicsState *tgState) {
 
 void clearFromCursorUp(TermGraphicsState *tgState) {
     clearFromCursorLeft(tgState);
-    memset(tgState->vram, 0, tgState->cursorY*tgState->width*4);
+    for (int i=0; i<tgState->cursorY*tgState->charWidth; i++) {
+        tgState->vram[i*4+0] = 0;
+        tgState->vram[i*4+1] = 0;
+        tgState->vram[i*4+2] = 0;
+        tgState->vram[i*4+3] = 255;
+    }
 }
 
 void clearLine(TermGraphicsState *tgState) {
-    memset(&tgState->vram[tgState->cursorY*tgState->width*4], 0, tgState->width*tgState->charHeight*4);
+    for (int i=tgState->cursorY*tgState->width; i<(tgState->cursorY+1)*tgState->width; i++) {
+        tgState->vram[i*4+0] = 0;
+        tgState->vram[i*4+1] = 0;
+        tgState->vram[i*4+2] = 0;
+        tgState->vram[i*4+3] = 255;
+    }
 }
 
 typedef enum {

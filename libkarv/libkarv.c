@@ -9,7 +9,7 @@
  | tcc -g -lX11 -DKARV_TEST KARV/libkarv/terminal.c -run KARV/libkarv/libkarv.c |
  | from a folder with `linux.bin` and `Codepage-437.png`                        |
 \*------------------------------------------------------------------------------*/
-#define KARV_TEST //Uncomment this line for LSP in the test harness code
+//#define KARV_TEST //Uncomment this line for LSP in the test harness code
 
 #ifdef KARV_TEST
 #define CNFG_IMPLEMENTATION
