@@ -33,6 +33,10 @@
 	#define MINIRV32_RAM_IMAGE_OFFSET  0x80000000
 #endif
 
+#ifndef MINIRV32_MMIO_RANGE
+	#define MINIRV32_MMIO_RANGE(n)  (0x10000000 <= (n) && (n) < 0x12000000)
+#endif
+
 #ifndef MINIRV32_POSTEXEC
 	#define MINIRV32_POSTEXEC(...);
 #endif
@@ -225,14 +229,9 @@ MINIRV32_STEPPROTO
 					if( rsval >= MINI_RV32_RAM_SIZE-3 )
 					{
 						rsval += MINIRV32_RAM_IMAGE_OFFSET;
-						if( rsval >= 0x10000000 && rsval < 0x12000000 )  // UART, CLNT
+						if( MINIRV32_MMIO_RANGE( rsval ) )  // UART, CLNT
 						{
-							if( rsval == 0x1100bffc ) // https://chromitem-soc.readthedocs.io/en/latest/clint.html
-								rval = CSR( timerh );
-							else if( rsval == 0x1100bff8 )
-								rval = CSR( timerl );
-							else
-								MINIRV32_HANDLE_MEM_LOAD_CONTROL( rsval, rval );
+							MINIRV32_HANDLE_MEM_LOAD_CONTROL( rsval, rval );
 						}
 						else
 						{
@@ -267,20 +266,9 @@ MINIRV32_STEPPROTO
 					if( addy >= MINI_RV32_RAM_SIZE-3 )
 					{
 						addy += MINIRV32_RAM_IMAGE_OFFSET;
-						if( addy >= 0x10000000 && addy < 0x12000000 )
+						if( MINIRV32_MMIO_RANGE( addy ) )
 						{
-							// Should be stuff like SYSCON, 8250, CLNT
-							if( addy == 0x11004004 ) //CLNT
-								CSR( timermatchh ) = rs2;
-							else if( addy == 0x11004000 ) //CLNT
-								CSR( timermatchl ) = rs2;
-							else if( addy == 0x11100000 ) //SYSCON (reboot, poweroff, etc.)
-							{
-								SETCSR( pc, pc + 4 );
-								return rs2; // NOTE: PC will be PC of Syscon.
-							}
-							else
-								MINIRV32_HANDLE_MEM_STORE_CONTROL( addy, rs2 );
+							MINIRV32_HANDLE_MEM_STORE_CONTROL( addy, rs2 );
 						}
 						else
 						{
@@ -417,14 +405,7 @@ MINIRV32_STEPPROTO
 					else if( microop == 0x0 ) // "SYSTEM" 0b000
 					{
 						rdid = 0;
-						if( csrno == 0x105 ) //WFI (Wait for interrupts)
-						{
-							CSR( mstatus ) |= 8;    //Enable interrupts
-							CSR( extraflags ) |= 4; //Infor environment we want to go to sleep.
-							SETCSR( pc, pc + 4 );
-							return 1;
-						}
-						else if( ( ( csrno & 0xff ) == 0x02 ) )  // MRET
+						if( ( ( csrno & 0xff ) == 0x02 ) )  // MRET
 						{
 							//https://raw.githubusercontent.com/riscv/virtual-memory/main/specs/663-Svpbmt.pdf
 							//Table 7.6. MRET then in mstatus/mstatush sets MPV=0, MPP=0, MIE=MPIE, and MPIE=1. La
@@ -434,14 +415,26 @@ MINIRV32_STEPPROTO
 							SETCSR( mstatus , (( startmstatus & 0x80) >> 4) | ((startextraflags&3) << 11) | 0x80 );
 							SETCSR( extraflags, (startextraflags & ~3) | ((startmstatus >> 11) & 3) );
 							pc = CSR( mepc ) -4;
-						}
-						else
-						{
-							switch( csrno )
-							{
-							case 0: trap = ( CSR( extraflags ) & 3) ? (11+1) : (8+1); break; // ECALL; 8 = "Environment call from U-mode"; 11 = "Environment call from M-mode"
-							case 1:	trap = (3+1); break; // EBREAK 3 = "Breakpoint"
-							default: trap = (2+1); break; // Illegal opcode.
+						} else {
+							switch (csrno) {
+							case 0:
+								trap = ( CSR( extraflags ) & 3) ? (11+1) : (8+1); // ECALL; 8 = "Environment call from U-mode"; 11 = "Environment call from M-mode"
+								break;
+							case 1:
+								trap = (3+1); break; // EBREAK 3 = "Breakpoint"
+							case 0x105: //WFI (Wait for interrupts)
+								CSR( mstatus ) |= 8;    //Enable interrupts
+								CSR( extraflags ) |= 4; //Infor environment we want to go to sleep.
+
+								if( CSR( cyclel ) > cycle ) CSR( cycleh )++;
+								SETCSR( cyclel, cycle );
+
+								MINIRV32_POSTEXEC( pc, ir, trap );
+
+								SETCSR( pc, pc + 4 );
+								return 1;
+							default:
+								trap = (2+1); break; // Illegal opcode.
 							}
 						}
 					}
@@ -499,8 +492,11 @@ MINIRV32_STEPPROTO
 			}
 
 			// If there was a trap, do NOT allow register writeback.
-			if( trap )
+			if( trap ) {
+				SETCSR( pc, pc );
+				MINIRV32_POSTEXEC( pc, ir, trap );
 				break;
+			}
 
 			if( rdid )
 			{
