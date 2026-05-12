@@ -403,21 +403,6 @@ static uint32_t HandleControlStore( uint32_t addy, uint32_t val )
     } else if( addy == 0x11100000 ) { //SYSCON (reboot, poweroff, etc.)
         core->pc = core->pc + 4;
         return val; // NOTE: PC will be PC of Syscon.
-    } else if (addy == 0x11000000) { //Graphics width
-        fprintf(stderr, "Guest tried to set width to %u, but guest-set sizes are not supported yet\n", val);
-    } else if (addy == 0x11000004) { //Graphics height
-        fprintf(stderr, "Guest tried to set height to %u, but guest-set sizes are not supported yet\n", val);
-    } else if (addy >= 0x1100000C && addy < termGraphicsState.width*termGraphicsState.height*4+0x1100000C) { //Graphics frame buffer
-        uint32_t index = addy-0x1100000C;
-        uint8_t r = (val >>  0) & 0xFF;
-        uint8_t g = (val >>  8) & 0xFF;
-        uint8_t b = (val >> 16) & 0xFF;
-        uint8_t a = (val >> 24) & 0xFF;
-        
-        termGraphicsState.vram[index+0] = r;
-        termGraphicsState.vram[index+1] = g;
-        termGraphicsState.vram[index+2] = b;
-        termGraphicsState.vram[index+3] = a;
     }
 	return 0;
 }
@@ -433,22 +418,6 @@ static uint32_t HandleControlLoad( uint32_t addy )
         return core->timerh;
     } else if( addy == 0x1100bff8 ) {
         return core->timerl;
-    } else if (addy == 0x11000000) { //Graphics width
-        return termGraphicsState.width;
-    } else if (addy == 0x11000004) { //Graphics height
-        return termGraphicsState.height;
-    } else if (addy == 0x11000008) { //Reserved for other graphics data
-        return 0;
-    } else if (addy >= 0x1100000C && addy < termGraphicsState.width*termGraphicsState.height*4+0x1100000C) { //Graphics frame buffer
-        uint32_t index = addy-0x1100000C;
-        uint32_t r = termGraphicsState.vram[index];
-        uint32_t g = termGraphicsState.vram[index+1];
-        uint32_t b = termGraphicsState.vram[index+2];
-        uint32_t a = termGraphicsState.vram[index+3];
-        uint32_t result = r | g << 8 | b << 16 | a << 24;
-        //uint32_t altResult = ((uint32_t*)localVram)[index/4];
-        //fprintf(stderr, "result: %x, altResult: %x\n", result, altResult);
-        return result;
     }
     
 	return 0;
