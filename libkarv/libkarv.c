@@ -396,7 +396,7 @@ static uint32_t HandleControlStore( uint32_t addy, uint32_t val )
         writeChar(&termGraphicsState, val);
 		//printf("%c", val);
         //fflush(stdout);
-    } else if( addy == 0x11004004 ) { //CLNT  FIXME: This and the following one conflict with the framebuffer's address space
+    } else if( addy == 0x11004004 ) { //CLNT
         core->timermatchh = val;
     } else if( addy == 0x11004000 ) { //CLNT
         core->timermatchl = val;
@@ -414,7 +414,7 @@ static uint32_t HandleControlLoad( uint32_t addy )
 		return 0x60 | IsKBHit();
     } else if( addy == 0x10000000 && IsKBHit() ) {
 		return ReadKBByte();
-    } else if( addy == 0x1100bffc ) { // https://chromitem-soc.readthedocs.io/en/latest/clint.html   FIXME: This and the following one conflict with the framebuffer's address space
+    } else if( addy == 0x1100bffc ) { // https://chromitem-soc.readthedocs.io/en/latest/clint.html
         return core->timerh;
     } else if( addy == 0x1100bff8 ) {
         return core->timerl;
